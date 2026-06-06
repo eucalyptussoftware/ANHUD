@@ -22,6 +22,7 @@ adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a ACTION_NAME ...
 - `SPEED_ALERT_THRESHOLD` (`int`): порог alert превышения.
 - `SPEEDOMETER` (`bool|0/1|"true"/"false"`): показывает или скрывает спидометр.
 - `CLOCK` (`bool|0/1|"true"/"false"`): показывает или скрывает часы.
+- `MAP` (`bool|0/1|"true"/"false"`): показывает или скрывает блок карты.
 
 Поведение:
 
@@ -51,6 +52,18 @@ adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS
 ```bash
 adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS --ez SPEEDOMETER true --ez CLOCK false
 ```
+
+```bash
+adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS --ez MAP true
+```
+
+Ограничения текущего контракта `G992.ANHUD.STATUS`:
+
+- Управляет только `ENABLE`, `STOP_NAVIGATION` и частью простых toggle-настроек.
+- Пока не умеет менять видимость следующих HUD-блоков: `LANE_GUIDANCE`, `ARROW`, `HUDSPEED`, `ROAD_CAMERA`, `TRAFFIC_LIGHT`, `TURN_SIGNALS`.
+- Пока не умеет менять связанные опции вроде `HUDSPEED_LIMIT`, `HUDSPEED_LIMIT_ALERT`, `HUDSPEED_LIMIT_ALERT_THRESHOLD`, `SPEEDOMETER_SHOW_UNIT_TEXT`, `ARROW_ONLY_WHEN_NO_ICON`, `TRAFFIC_LIGHT_MAX_ACTIVE`.
+- Не умеет менять layout/scale/alpha/position/preview-настройки.
+- Для полного набора overlay-настроек сейчас используйте пресеты через `ANHUD_SET_PRESET`.
 
 ## `ANHUD_SET_PRESET`
 

@@ -93,12 +93,23 @@ class NavigationReceiver : BroadcastReceiver() {
                 UiLogStore.append(LogCategory.NAVIGATION, "яндекс маневр bitmap=$size typeExtra=\"$maneuverTypeFromExtra\" typePredicted=\"$maneuverTypePredicted\" final=\"$maneuverType\"")
                 var updated: NavigationHudState? = null
                 NavigationHudStore.update { state ->
+                    val maneuverChanged = hasManeuverChanged(
+                        previousState = state,
+                        incomingBitmap = bitmap,
+                        incomingManeuverType = maneuverType
+                    )
                     val next = state.copy(
                         maneuverBitmap = bitmap ?: state.maneuverBitmap,
                         maneuverType = maneuverType.ifBlank { state.maneuverType },
                         source = SOURCE_YANDEX,
                         lastUpdated = now,
-                        lastAction = action
+                        lastAction = action,
+                        secondaryText = if (maneuverChanged && state.secondaryText == state.rawNextStreet) {
+                            ""
+                        } else {
+                            state.secondaryText
+                        },
+                        rawNextStreet = if (maneuverChanged) "" else state.rawNextStreet
                     )
                     updated = next
                     next
@@ -142,7 +153,6 @@ class NavigationReceiver : BroadcastReceiver() {
                     next
                 }
                 updated?.let { maybeUpdateNativeNavigation(context, it, NativeNavUpdateTrigger.STREET) }
-                scheduleStreetReset(context)
             }
             ACTION_YANDEX_SPEEDLIMIT -> {
                 if (OverlayPrefs.speedLimitFromHudSpeed(context)) {
@@ -410,12 +420,10 @@ class NavigationReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "NavigationReceiver"
         private const val NATIVE_NAV_DEBOUNCE_MS = 100L
-        private const val STREET_RESET_DELAY_MS = 15000L
         private const val YANDEX_DUPLICATE_SUPPRESSION_MS = 400L
 
         private val nativeNavHandler = android.os.Handler(android.os.Looper.getMainLooper())
         private var pendingNativeNavUpdate: Runnable? = null
-        private var pendingStreetReset: Runnable? = null
         private val trafficLightHandler = android.os.Handler(android.os.Looper.getMainLooper())
         private var pendingTrafficLightCleanup: Runnable? = null
         private val activeTrafficLights = LinkedHashMap<Int, TrafficLightInfo>()
@@ -429,8 +437,6 @@ class NavigationReceiver : BroadcastReceiver() {
 
         @Volatile
         private var lastArrowNativeUpdateAt: Long = 0L
-        @Volatile
-        private var lastStreetUpdateAt: Long = 0L
         @Volatile
         private var lastNavigatorIntentAt: Long = 0L
         @Volatile
@@ -910,7 +916,6 @@ class NavigationReceiver : BroadcastReceiver() {
             if (OverlayPrefs.nativeNavEnabled(context)) {
                 NativeNavigationController.stopNavigation(context)
             }
-            cancelStreetReset()
             lastNativeNavPayload = null
             dynamicHideTurnSpeedBucket = null
             NavigationHudStore.reset(
@@ -921,42 +926,33 @@ class NavigationReceiver : BroadcastReceiver() {
             )
         }
 
-        private fun scheduleStreetReset(context: Context) {
-            val scheduledAt = System.currentTimeMillis()
-            lastStreetUpdateAt = scheduledAt
-            pendingStreetReset?.let { nativeNavHandler.removeCallbacks(it) }
-            val runnable = Runnable {
-                if (lastStreetUpdateAt != scheduledAt) {
-                    return@Runnable
-                }
-                clearStreetName(context)
-            }
-            pendingStreetReset = runnable
-            nativeNavHandler.postDelayed(runnable, STREET_RESET_DELAY_MS)
+        private fun hasManeuverChanged(
+            previousState: NavigationHudState,
+            incomingBitmap: Bitmap?,
+            incomingManeuverType: String
+        ): Boolean {
+            val previousSignature = maneuverSignature(
+                bitmap = previousState.maneuverBitmap,
+                maneuverType = previousState.maneuverType
+            ) ?: return false
+            val nextSignature = maneuverSignature(
+                bitmap = incomingBitmap ?: previousState.maneuverBitmap,
+                maneuverType = incomingManeuverType.ifBlank { previousState.maneuverType }
+            ) ?: return false
+            return previousSignature != nextSignature
         }
 
-        private fun cancelStreetReset() {
-            pendingStreetReset?.let { nativeNavHandler.removeCallbacks(it) }
-            pendingStreetReset = null
-            lastStreetUpdateAt = 0L
-        }
-
-        private fun clearStreetName(context: Context) {
-            var updated: NavigationHudState? = null
-            NavigationHudStore.update { state ->
-                if (state.rawNextStreet.isBlank()) {
-                    return@update state
-                }
-                val next = state.copy(
-                    secondaryText = if (state.secondaryText == state.rawNextStreet) "" else state.secondaryText,
-                    lastUpdated = System.currentTimeMillis(),
-                    lastAction = "street_timeout",
-                    rawNextStreet = ""
-                )
-                updated = next
-                next
+        private fun maneuverSignature(bitmap: Bitmap?, maneuverType: String): String? {
+            val normalizedType = maneuverType.trim()
+            val bitmapKey = if (bitmap != null) {
+                "${bitmap.width}x${bitmap.height}:${bitmap.config}"
+            } else {
+                "none"
             }
-            updated?.let { maybeUpdateNativeNavigation(context, it, NativeNavUpdateTrigger.STREET) }
+            if (normalizedType.isBlank() && bitmap == null) {
+                return null
+            }
+            return "$normalizedType:$bitmapKey"
         }
 
         private fun handleTrafficLightUpdate(

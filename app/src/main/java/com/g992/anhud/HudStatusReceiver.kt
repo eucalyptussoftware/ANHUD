@@ -25,6 +25,7 @@ class HudStatusReceiver : BroadcastReceiver() {
         val speedLimitAlertThreshold = parseIntExtra(intent, EXTRA_SPEED_LIMIT_ALERT_THRESHOLD)
         val speedometerEnabled = parseBooleanExtra(intent, EXTRA_SPEEDOMETER_ENABLED)
         val clockEnabled = parseBooleanExtra(intent, EXTRA_CLOCK_ENABLED)
+        val mapEnabled = parseBooleanExtra(intent, EXTRA_MAP_ENABLED)
 
         var effectiveEnabled = enabled
         if (effectiveEnabled == true && !Settings.canDrawOverlays(context)) {
@@ -68,6 +69,9 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (clockEnabled != null) {
             OverlayPrefs.setClockEnabled(context, clockEnabled)
         }
+        if (mapEnabled != null) {
+            OverlayPrefs.setMapEnabled(context, mapEnabled)
+        }
 
         val shouldBroadcast = effectiveEnabled != null ||
             navEnabled != null ||
@@ -75,7 +79,8 @@ class HudStatusReceiver : BroadcastReceiver() {
             speedLimitAlertEnabled != null ||
             speedLimitAlertThreshold != null ||
             speedometerEnabled != null ||
-            clockEnabled != null
+            clockEnabled != null ||
+            mapEnabled != null
         if (!shouldBroadcast) {
             return
         }
@@ -87,7 +92,8 @@ class HudStatusReceiver : BroadcastReceiver() {
             speedLimitAlertEnabled,
             speedLimitAlertThreshold,
             speedometerEnabled,
-            clockEnabled
+            clockEnabled,
+            mapEnabled
         )
         if (effectiveEnabled == true) {
             ContextCompat.startForegroundService(
@@ -137,7 +143,8 @@ class HudStatusReceiver : BroadcastReceiver() {
         speedLimitAlertEnabled: Boolean?,
         speedLimitAlertThreshold: Int?,
         speedometerEnabled: Boolean?,
-        clockEnabled: Boolean?
+        clockEnabled: Boolean?,
+        mapEnabled: Boolean?
     ) {
         val updateIntent = Intent(OverlayBroadcasts.ACTION_OVERLAY_SETTINGS_CHANGED)
             .setPackage(context.packageName)
@@ -158,6 +165,9 @@ class HudStatusReceiver : BroadcastReceiver() {
         }
         if (clockEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_ENABLED, clockEnabled)
+        }
+        if (mapEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_MAP_ENABLED, mapEnabled)
         }
         updateIntent.putExtra(
             OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
@@ -359,6 +369,7 @@ class HudStatusReceiver : BroadcastReceiver() {
         const val EXTRA_SPEED_LIMIT_ALERT_THRESHOLD = "SPEED_ALERT_THRESHOLD"
         const val EXTRA_SPEEDOMETER_ENABLED = "SPEEDOMETER"
         const val EXTRA_CLOCK_ENABLED = "CLOCK"
+        const val EXTRA_MAP_ENABLED = "MAP"
         const val EXTRA_PRESET = "PRESET"
         const val EXTRA_PRESET_INDEX = "INDEX"
         private val PRESET_NUMBER_KEYS = listOf(

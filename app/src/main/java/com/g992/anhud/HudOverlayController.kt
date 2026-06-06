@@ -37,6 +37,7 @@ class HudOverlayController(private val context: Context) {
     companion object {
         private const val CONTAINER_OUTLINE_PREVIEW_MIN_ALPHA = 0.35f
         private const val CLOCK_TICK_MS = 5_000L
+        private const val MAP_HIDE_BY_MANEUVER_DELAY_MS = 5_000L
         private const val DISPLAY_CHANGE_REFRESH_DELAY_MS = 500L
         private const val DISPLAY_RETRY_DELAY_MS = 2_000L
         private const val DISPLAY_RETRY_MAX_ATTEMPTS = 100
@@ -227,6 +228,7 @@ class HudOverlayController(private val context: Context) {
     private var mapHadVisibleContent: Boolean = false
     private var dynamicHideTurnSpeedBucket: OverlayPrefs.DynamicHideTurnSpeedBucket? = null
     private var hideMapByManeuverActive: Boolean = false
+    private var pendingMapHideByManeuverRunnable: Runnable? = null
     private var mapTransparentFillPending: Boolean = false
     private val clockTicker = object : Runnable {
         override fun run() {
@@ -557,6 +559,7 @@ class HudOverlayController(private val context: Context) {
                 hudSpeedContainer?.visibility = View.GONE
             }
             dynamicHideTurnSpeedBucket = null
+            cancelMapHideByManeuverDelay()
             hideMapByManeuverActive = false
             // Fill with transparent to clear any remnants
             container.setBackgroundColor(android.graphics.Color.TRANSPARENT)
@@ -859,6 +862,7 @@ class HudOverlayController(private val context: Context) {
             handler.removeCallbacks(displayChangeRefreshRunnable)
             displayChangeRefreshPending = false
             stopTurnSignalBlinking()
+            cancelMapHideByManeuverDelay()
             displayManager?.unregisterDisplayListener(displayListener)
             removeOverlay()
         }
@@ -1611,10 +1615,12 @@ class HudOverlayController(private val context: Context) {
     private fun removeOverlay() {
         cancelDelayedRedraw()
         cancelHudSpeedHide()
+        cancelMapHideByManeuverDelay()
         stopTurnSignalBlinking()
         removeMapView()
         laneGuidanceHadVisibleContent = false
         mapHadVisibleContent = false
+        hideMapByManeuverActive = false
         mapTransparentFillPending = false
         val wm = windowManager
         val view = overlayView
@@ -1683,6 +1689,7 @@ class HudOverlayController(private val context: Context) {
     private fun clearOverlayForDisable() {
         cancelDelayedRedraw()
         cancelHudSpeedHide()
+        cancelMapHideByManeuverDelay()
         stopTurnSignalBlinking()
         val container = overlayView
         if (container == null) {
@@ -1950,7 +1957,7 @@ class HudOverlayController(private val context: Context) {
             state.trafficLights
         }
         val laneGuidanceManeuver = routeSnapshot.laneManeuver
-        val hideMapByManeuver = shouldHideMapByManeuver(showPreview, hideNavigationByDistance)
+        val hideMapByManeuver = resolveMapHideByManeuver(showPreview, hideNavigationByDistance)
         hideMapByManeuverActive = hideMapByManeuver
         val mapVisible = mapAllowed && if (showPreview) {
             previewMap
@@ -3162,12 +3169,41 @@ class HudOverlayController(private val context: Context) {
         return distanceMeters > thresholdMeters
     }
 
-    private fun shouldHideMapByManeuver(showPreview: Boolean, hideNavigationByDistance: Boolean): Boolean {
+    private fun resolveMapHideByManeuver(showPreview: Boolean, hideNavigationByDistance: Boolean): Boolean {
         if (showPreview || !hideNavigationByDistance) {
+            cancelMapHideByManeuverDelay()
             return false
         }
-        return OverlayPrefs.hideTurnDynamicEnabled(context) &&
+        val shouldHide = OverlayPrefs.hideTurnDynamicEnabled(context) &&
             OverlayPrefs.hideTurnDynamicHideMapBlock(context)
+        if (!shouldHide) {
+            cancelMapHideByManeuverDelay()
+            return false
+        }
+        if (hideMapByManeuverActive) {
+            return true
+        }
+        scheduleMapHideByManeuverDelay()
+        return false
+    }
+
+    private fun scheduleMapHideByManeuverDelay() {
+        if (pendingMapHideByManeuverRunnable != null) {
+            return
+        }
+        val runnable = Runnable {
+            pendingMapHideByManeuverRunnable = null
+            hideMapByManeuverActive = true
+            applyState(lastState)
+        }
+        pendingMapHideByManeuverRunnable = runnable
+        handler.postDelayed(runnable, MAP_HIDE_BY_MANEUVER_DELAY_MS)
+    }
+
+    private fun cancelMapHideByManeuverDelay() {
+        pendingMapHideByManeuverRunnable?.let { handler.removeCallbacks(it) }
+        pendingMapHideByManeuverRunnable = null
+        hideMapByManeuverActive = false
     }
 
     private fun resolveManeuverDistanceMeters(state: NavigationHudState): Int? {
