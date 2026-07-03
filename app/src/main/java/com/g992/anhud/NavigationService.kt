@@ -34,6 +34,9 @@ class NavigationService : Service() {
             addAction(NavigationReceiver.ACTION_YANDEX_ROUTE_POLYLINE)
             addAction(NavigationReceiver.ACTION_NATIVE_NAV_STOP)
             addAction(NavigationReceiver.ACTION_HUDSPEED_UPDATE)
+            addAction(NavigationReceiver.ACTION_STRELKA_EVENT_START)
+            addAction(NavigationReceiver.ACTION_STRELKA_EVENT_END)
+            addAction(NavigationReceiver.ACTION_STRELKA_OVERLAY_BITMAP)
         }
         ContextCompat.registerReceiver(
             this,

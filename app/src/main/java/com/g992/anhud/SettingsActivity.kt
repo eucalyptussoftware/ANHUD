@@ -50,6 +50,8 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.RadioGroup
+import android.widget.RadioButton
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -94,6 +96,9 @@ class SettingsActivity : ScaledActivity() {
     private lateinit var timeoutSettingsToggle: View
     private lateinit var timeoutSettingsContent: View
     private lateinit var timeoutSettingsToggleLabel: TextView
+    private lateinit var hudAlertSourceGroup: RadioGroup
+    private lateinit var hudAlertSourceHudSpeed: RadioButton
+    private lateinit var hudAlertSourceStrelka: RadioButton
     private lateinit var cameraTimeoutNearInput: EditText
     private lateinit var cameraTimeoutFarInput: EditText
     private lateinit var trafficLightTimeoutInput: EditText
@@ -309,6 +314,9 @@ class SettingsActivity : ScaledActivity() {
         timeoutSettingsToggle = findViewById(R.id.timeoutSettingsToggle)
         timeoutSettingsContent = findViewById(R.id.timeoutSettingsContent)
         timeoutSettingsToggleLabel = findViewById(R.id.timeoutSettingsToggleLabel)
+        hudAlertSourceGroup = findViewById(R.id.hudAlertSourceGroup)
+        hudAlertSourceHudSpeed = findViewById(R.id.hudAlertSourceHudSpeed)
+        hudAlertSourceStrelka = findViewById(R.id.hudAlertSourceStrelka)
         cameraTimeoutNearInput = findViewById(R.id.cameraTimeoutNearInput)
         cameraTimeoutFarInput = findViewById(R.id.cameraTimeoutFarInput)
         trafficLightTimeoutInput = findViewById(R.id.trafficLightTimeoutInput)
@@ -486,6 +494,16 @@ class SettingsActivity : ScaledActivity() {
     }
 
     private fun setupGeneralSettings() {
+        hudAlertSourceGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            val source = when (checkedId) {
+                R.id.hudAlertSourceStrelka -> OverlayPrefs.HudAlertSource.STRELKA
+                else -> OverlayPrefs.HudAlertSource.HUDSPEED
+            }
+            OverlayPrefs.setHudAlertSource(this, source)
+            broadcastHudAlertSource(source)
+        }
+
         timeoutSettingsToggle.setOnClickListener {
             areTimeoutSettingsExpanded = !areTimeoutSettingsExpanded
             updateTimeoutSettingsSection()
@@ -2809,10 +2827,13 @@ class SettingsActivity : ScaledActivity() {
         val navPos = OverlayPrefs.navPositionDp(this)
         val arrowPos = OverlayPrefs.arrowPositionDp(this)
         val speedPos = OverlayPrefs.speedPositionDp(this)
+        val hudAlertSource = OverlayPrefs.hudAlertSource(this)
         val hudSpeedPos = OverlayPrefs.hudSpeedPositionDp(this)
+        val strelkaPos = OverlayPrefs.strelkaPositionDp(this)
         val roadCameraPos = OverlayPrefs.roadCameraPositionDp(this)
         val trafficLightPos = OverlayPrefs.trafficLightPositionDp(this)
         val speedometerPos = OverlayPrefs.speedometerPositionDp(this)
+        val turnSignalsPos = OverlayPrefs.turnSignalsPositionDp(this)
         val clockPos = OverlayPrefs.clockPositionDp(this)
         val containerPos = OverlayPrefs.containerPositionDp(this)
         val containerSize = OverlayPrefs.containerSizeDp(this)
@@ -2822,14 +2843,19 @@ class SettingsActivity : ScaledActivity() {
         intent.putExtra(OverlayBroadcasts.EXTRA_ARROW_Y_DP, arrowPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_X_DP, speedPos.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_Y_DP, speedPos.y)
+        intent.putExtra(OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE, hudAlertSource.storedValue)
         intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_X_DP, hudSpeedPos.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_Y_DP, hudSpeedPos.y)
+        intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_X_DP, strelkaPos.x)
+        intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_Y_DP, strelkaPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_X_DP, roadCameraPos.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_Y_DP, roadCameraPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_X_DP, trafficLightPos.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_Y_DP, trafficLightPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_X_DP, speedometerPos.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_Y_DP, speedometerPos.y)
+        intent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_X_DP, turnSignalsPos.x)
+        intent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_Y_DP, turnSignalsPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_X_DP, clockPos.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_Y_DP, clockPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_CONTAINER_X_DP, containerPos.x)
@@ -2842,17 +2868,29 @@ class SettingsActivity : ScaledActivity() {
         intent.putExtra(OverlayBroadcasts.EXTRA_ARROW_SCALE, OverlayPrefs.arrowScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_SCALE, OverlayPrefs.speedScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_SCALE, OverlayPrefs.hudSpeedScale(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_SCALE, OverlayPrefs.strelkaScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_SCALE, OverlayPrefs.roadCameraScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_SCALE, OverlayPrefs.trafficLightScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_SCALE, OverlayPrefs.speedometerScale(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_SCALE, OverlayPrefs.turnSignalsScale(this))
+        intent.putExtra(
+            OverlayBroadcasts.EXTRA_TURN_SIGNALS_SPACING_DP,
+            OverlayPrefs.turnSignalsSpacingDp(this)
+        )
+        intent.putExtra(
+            OverlayBroadcasts.EXTRA_TURN_SIGNALS_ICON_STYLE,
+            OverlayPrefs.turnSignalsIconStyle(this)
+        )
         intent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_SCALE, OverlayPrefs.clockScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_NAV_ALPHA, OverlayPrefs.navAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_ARROW_ALPHA, OverlayPrefs.arrowAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_ALPHA, OverlayPrefs.speedAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ALPHA, OverlayPrefs.hudSpeedAlpha(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_ALPHA, OverlayPrefs.strelkaAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ALPHA, OverlayPrefs.roadCameraAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_ALPHA, OverlayPrefs.trafficLightAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ALPHA, OverlayPrefs.speedometerAlpha(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_ALPHA, OverlayPrefs.turnSignalsAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_ALPHA, OverlayPrefs.clockAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_CONTAINER_ALPHA, OverlayPrefs.containerAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_NAV_ENABLED, OverlayPrefs.navEnabled(this))
@@ -2881,6 +2919,17 @@ class SettingsActivity : ScaledActivity() {
             OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
             OverlayPrefs.infoMirrorStarsheep7Enabled(this)
         )
+        sendBroadcast(intent)
+    }
+
+    private fun broadcastHudAlertSource(source: OverlayPrefs.HudAlertSource) {
+        val intent = Intent(OverlayBroadcasts.ACTION_OVERLAY_SETTINGS_CHANGED)
+            .setPackage(packageName)
+            .putExtra(OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE, source.storedValue)
+            .putExtra(
+                OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
+                OverlayPrefs.infoMirrorStarsheep7Enabled(this)
+            )
         sendBroadcast(intent)
     }
 
@@ -3400,6 +3449,10 @@ class SettingsActivity : ScaledActivity() {
     private fun syncUiFromPrefs() {
         isSyncingUi = true
         try {
+            when (OverlayPrefs.hudAlertSource(this)) {
+                OverlayPrefs.HudAlertSource.HUDSPEED -> hudAlertSourceGroup.check(R.id.hudAlertSourceHudSpeed)
+                OverlayPrefs.HudAlertSource.STRELKA -> hudAlertSourceGroup.check(R.id.hudAlertSourceStrelka)
+            }
             cameraTimeoutNearInput.setText(OverlayPrefs.cameraTimeoutNear(this).toString())
             cameraTimeoutFarInput.setText(OverlayPrefs.cameraTimeoutFar(this).toString())
             trafficLightTimeoutInput.setText(OverlayPrefs.trafficLightTimeout(this).toString())

@@ -20,12 +20,19 @@ class HudStatusReceiver : BroadcastReceiver() {
         val enabled = parseBooleanExtra(intent, EXTRA_ENABLE)
         val stopNavigation = parseBooleanExtra(intent, EXTRA_STOP_NAVIGATION)
         val navEnabled = parseBooleanExtra(intent, EXTRA_NAV_ENABLED)
+        val laneGuidanceEnabled = parseBooleanExtra(intent, EXTRA_LANE_GUIDANCE_ENABLED)
+        val arrowEnabled = parseBooleanExtra(intent, EXTRA_ARROW_ENABLED)
         val speedEnabled = parseBooleanExtra(intent, EXTRA_SPEED_ENABLED)
+        val hudSpeedEnabled = parseBooleanExtra(intent, EXTRA_HUDSPEED_ENABLED)
+        val roadCameraEnabled = parseBooleanExtra(intent, EXTRA_ROAD_CAMERA_ENABLED)
+        val trafficLightEnabled = parseBooleanExtra(intent, EXTRA_TRAFFIC_LIGHT_ENABLED)
         val speedLimitAlertEnabled = parseBooleanExtra(intent, EXTRA_SPEED_LIMIT_ALERT_ENABLED)
         val speedLimitAlertThreshold = parseIntExtra(intent, EXTRA_SPEED_LIMIT_ALERT_THRESHOLD)
         val speedometerEnabled = parseBooleanExtra(intent, EXTRA_SPEEDOMETER_ENABLED)
+        val turnSignalsEnabled = parseBooleanExtra(intent, EXTRA_TURN_SIGNALS_ENABLED)
         val clockEnabled = parseBooleanExtra(intent, EXTRA_CLOCK_ENABLED)
         val mapEnabled = parseBooleanExtra(intent, EXTRA_MAP_ENABLED)
+        val hudAlertSource = parseHudAlertSource(intent, EXTRA_HUD_ALERT_SOURCE)
 
         var effectiveEnabled = enabled
         if (effectiveEnabled == true && !Settings.canDrawOverlays(context)) {
@@ -54,8 +61,23 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (navEnabled != null) {
             OverlayPrefs.setNavEnabled(context, navEnabled)
         }
+        if (laneGuidanceEnabled != null) {
+            OverlayPrefs.setLaneGuidanceEnabled(context, laneGuidanceEnabled)
+        }
+        if (arrowEnabled != null) {
+            OverlayPrefs.setArrowEnabled(context, arrowEnabled)
+        }
         if (speedEnabled != null) {
             OverlayPrefs.setSpeedEnabled(context, speedEnabled)
+        }
+        if (hudSpeedEnabled != null) {
+            OverlayPrefs.setHudSpeedEnabled(context, hudSpeedEnabled)
+        }
+        if (roadCameraEnabled != null) {
+            OverlayPrefs.setRoadCameraEnabled(context, roadCameraEnabled)
+        }
+        if (trafficLightEnabled != null) {
+            OverlayPrefs.setTrafficLightEnabled(context, trafficLightEnabled)
         }
         if (speedLimitAlertEnabled != null) {
             OverlayPrefs.setSpeedLimitAlertEnabled(context, speedLimitAlertEnabled)
@@ -66,21 +88,34 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (speedometerEnabled != null) {
             OverlayPrefs.setSpeedometerEnabled(context, speedometerEnabled)
         }
+        if (turnSignalsEnabled != null) {
+            OverlayPrefs.setTurnSignalsEnabled(context, turnSignalsEnabled)
+        }
         if (clockEnabled != null) {
             OverlayPrefs.setClockEnabled(context, clockEnabled)
         }
         if (mapEnabled != null) {
             OverlayPrefs.setMapEnabled(context, mapEnabled)
         }
+        if (hudAlertSource != null) {
+            OverlayPrefs.setHudAlertSource(context, hudAlertSource)
+        }
 
         val shouldBroadcast = effectiveEnabled != null ||
             navEnabled != null ||
+            laneGuidanceEnabled != null ||
+            arrowEnabled != null ||
             speedEnabled != null ||
+            hudSpeedEnabled != null ||
+            roadCameraEnabled != null ||
+            trafficLightEnabled != null ||
             speedLimitAlertEnabled != null ||
             speedLimitAlertThreshold != null ||
             speedometerEnabled != null ||
+            turnSignalsEnabled != null ||
             clockEnabled != null ||
-            mapEnabled != null
+            mapEnabled != null ||
+            hudAlertSource != null
         if (!shouldBroadcast) {
             return
         }
@@ -88,12 +123,19 @@ class HudStatusReceiver : BroadcastReceiver() {
         sendOverlayRefresh(
             context,
             navEnabled,
+            laneGuidanceEnabled,
+            arrowEnabled,
             speedEnabled,
+            hudSpeedEnabled,
+            roadCameraEnabled,
+            trafficLightEnabled,
             speedLimitAlertEnabled,
             speedLimitAlertThreshold,
             speedometerEnabled,
+            turnSignalsEnabled,
             clockEnabled,
-            mapEnabled
+            mapEnabled,
+            hudAlertSource
         )
         if (effectiveEnabled == true) {
             ContextCompat.startForegroundService(
@@ -139,20 +181,42 @@ class HudStatusReceiver : BroadcastReceiver() {
     private fun sendOverlayRefresh(
         context: Context,
         navEnabled: Boolean?,
+        laneGuidanceEnabled: Boolean?,
+        arrowEnabled: Boolean?,
         speedEnabled: Boolean?,
+        hudSpeedEnabled: Boolean?,
+        roadCameraEnabled: Boolean?,
+        trafficLightEnabled: Boolean?,
         speedLimitAlertEnabled: Boolean?,
         speedLimitAlertThreshold: Int?,
         speedometerEnabled: Boolean?,
+        turnSignalsEnabled: Boolean?,
         clockEnabled: Boolean?,
-        mapEnabled: Boolean?
+        mapEnabled: Boolean?,
+        hudAlertSource: OverlayPrefs.HudAlertSource?
     ) {
         val updateIntent = Intent(OverlayBroadcasts.ACTION_OVERLAY_SETTINGS_CHANGED)
             .setPackage(context.packageName)
         if (navEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_NAV_ENABLED, navEnabled)
         }
+        if (laneGuidanceEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_LANE_GUIDANCE_ENABLED, laneGuidanceEnabled)
+        }
+        if (arrowEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_ARROW_ENABLED, arrowEnabled)
+        }
         if (speedEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_SPEED_ENABLED, speedEnabled)
+        }
+        if (hudSpeedEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ENABLED, hudSpeedEnabled)
+        }
+        if (roadCameraEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ENABLED, roadCameraEnabled)
+        }
+        if (trafficLightEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_ENABLED, trafficLightEnabled)
         }
         if (speedLimitAlertEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_SPEED_LIMIT_ALERT_ENABLED, speedLimitAlertEnabled)
@@ -163,11 +227,17 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (speedometerEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ENABLED, speedometerEnabled)
         }
+        if (turnSignalsEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_ENABLED, turnSignalsEnabled)
+        }
         if (clockEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_ENABLED, clockEnabled)
         }
         if (mapEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_MAP_ENABLED, mapEnabled)
+        }
+        if (hudAlertSource != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE, hudAlertSource.storedValue)
         }
         updateIntent.putExtra(
             OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
@@ -181,6 +251,7 @@ class HudStatusReceiver : BroadcastReceiver() {
         val arrowPos = OverlayPrefs.arrowPositionDp(context)
         val speedPos = OverlayPrefs.speedPositionDp(context)
         val hudSpeedPos = OverlayPrefs.hudSpeedPositionDp(context)
+        val strelkaPos = OverlayPrefs.strelkaPositionDp(context)
         val roadCameraPos = OverlayPrefs.roadCameraPositionDp(context)
         val trafficLightPos = OverlayPrefs.trafficLightPositionDp(context)
         val speedometerPos = OverlayPrefs.speedometerPositionDp(context)
@@ -201,8 +272,14 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_ARROW_Y_DP, arrowPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_SPEED_X_DP, speedPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_SPEED_Y_DP, speedPos.y)
+            .putExtra(
+                OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE,
+                OverlayPrefs.hudAlertSource(context).storedValue
+            )
             .putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_X_DP, hudSpeedPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_Y_DP, hudSpeedPos.y)
+            .putExtra(OverlayBroadcasts.EXTRA_STRELKA_X_DP, strelkaPos.x)
+            .putExtra(OverlayBroadcasts.EXTRA_STRELKA_Y_DP, strelkaPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_X_DP, roadCameraPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_Y_DP, roadCameraPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_X_DP, trafficLightPos.x)
@@ -219,6 +296,7 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_SPEED_SCALE, OverlayPrefs.speedScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_SPEED_TEXT_SCALE, OverlayPrefs.speedTextScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_SCALE, OverlayPrefs.hudSpeedScale(context))
+            .putExtra(OverlayBroadcasts.EXTRA_STRELKA_SCALE, OverlayPrefs.strelkaScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_SCALE, OverlayPrefs.roadCameraScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_SCALE, OverlayPrefs.trafficLightScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_SCALE, OverlayPrefs.speedometerScale(context))
@@ -233,6 +311,7 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_ARROW_ALPHA, OverlayPrefs.arrowAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_SPEED_ALPHA, OverlayPrefs.speedAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ALPHA, OverlayPrefs.hudSpeedAlpha(context))
+            .putExtra(OverlayBroadcasts.EXTRA_STRELKA_ALPHA, OverlayPrefs.strelkaAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ALPHA, OverlayPrefs.roadCameraAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_ALPHA, OverlayPrefs.trafficLightAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ALPHA, OverlayPrefs.speedometerAlpha(context))
@@ -324,6 +403,19 @@ class HudStatusReceiver : BroadcastReceiver() {
         return parseIntValue(readExtraValue(extras, key))
     }
 
+    private fun parseHudAlertSource(intent: Intent, key: String): OverlayPrefs.HudAlertSource? {
+        if (!intent.hasExtra(key)) {
+            return null
+        }
+        val extras = intent.extras ?: return null
+        val raw = readExtraValue(extras, key) as? String ?: return null
+        val normalized = raw.trim().uppercase()
+        if (normalized.isBlank()) {
+            return null
+        }
+        return OverlayPrefs.HudAlertSource.entries.firstOrNull { it.storedValue == normalized }
+    }
+
     private fun parseIntValue(raw: Any?): Int? {
         return when (raw) {
             is Number -> raw.toInt()
@@ -347,7 +439,8 @@ class HudStatusReceiver : BroadcastReceiver() {
             "G992.ANHUD.STATUS",
             preserveSpeedLimit = true,
             preserveRoadCamera = true,
-            preserveHudSpeed = true
+            preserveHudSpeed = true,
+            preserveStrelka = true
         )
         UiLogStore.append(LogCategory.NAVIGATION, "Маршрут завершен через intent")
 
@@ -364,12 +457,19 @@ class HudStatusReceiver : BroadcastReceiver() {
         const val EXTRA_ENABLE = "ENABLE"
         const val EXTRA_STOP_NAVIGATION = "STOP_NAVIGATION"
         const val EXTRA_NAV_ENABLED = "NAV"
+        const val EXTRA_LANE_GUIDANCE_ENABLED = "LANE_GUIDANCE"
+        const val EXTRA_ARROW_ENABLED = "ARROW"
         const val EXTRA_SPEED_ENABLED = "SPEED_LIMIT"
+        const val EXTRA_HUDSPEED_ENABLED = "HUDSPEED"
+        const val EXTRA_ROAD_CAMERA_ENABLED = "ROAD_CAMERA"
+        const val EXTRA_TRAFFIC_LIGHT_ENABLED = "TRAFFIC_LIGHT"
         const val EXTRA_SPEED_LIMIT_ALERT_ENABLED = "SPEED_ALERT"
         const val EXTRA_SPEED_LIMIT_ALERT_THRESHOLD = "SPEED_ALERT_THRESHOLD"
         const val EXTRA_SPEEDOMETER_ENABLED = "SPEEDOMETER"
+        const val EXTRA_TURN_SIGNALS_ENABLED = "TURN_SIGNALS"
         const val EXTRA_CLOCK_ENABLED = "CLOCK"
         const val EXTRA_MAP_ENABLED = "MAP"
+        const val EXTRA_HUD_ALERT_SOURCE = "HUD_ALERT_SOURCE"
         const val EXTRA_PRESET = "PRESET"
         const val EXTRA_PRESET_INDEX = "INDEX"
         private val PRESET_NUMBER_KEYS = listOf(

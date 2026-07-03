@@ -133,7 +133,8 @@ class HudMapController(
     private var lastSnappedRouteToken: String? = null
     private var lastSnappedRouteProgressMeters: Double? = null
     private var lastSnappedRouteProgressUptimeMs: Long = 0L
-    private var lastTripStatusLayoutKey: String? = null
+    private var currentTripStatusReservedHeightPx: Int = 0
+    private var lastAppliedTrackingConfig: TrackingConfig? = null
 
     private val settingsListener: (MapRenderSettings) -> Unit = { settings ->
         val tileProviderChanged = currentSettings.tileProviderId != settings.tileProviderId
@@ -194,12 +195,11 @@ class HudMapController(
     private val navStateListener = object : NavigationHudStore.Listener {
         override fun onStateUpdated(state: NavigationHudState) {
             val newBucket = applySpeedBucketHysteresis(currentSpeedBucketKmh, state.speedKmh)
-            val tripStatusLayoutChanged = hasTripStatusLayoutChanged(state)
             if (newBucket != currentSpeedBucketKmh) {
                 currentSpeedBucketKmh = newBucket
-            }
-            if (tripStatusLayoutChanged || currentSettings.autoZoomEnabled) {
-                applyTrackingConfig()
+                if (currentSettings.autoZoomEnabled) {
+                    applyTrackingConfig()
+                }
             }
         }
     }
@@ -243,6 +243,13 @@ class HudMapController(
         } else {
             View.INVISIBLE
         }
+    }
+
+    fun setTripStatusReservedHeightPx(heightPx: Int) {
+        val normalized = heightPx.coerceAtLeast(0)
+        if (currentTripStatusReservedHeightPx == normalized) return
+        currentTripStatusReservedHeightPx = normalized
+        applyTrackingConfig()
     }
 
     fun release() {
@@ -346,6 +353,7 @@ class HudMapController(
             }
         )
         locationComponent = component
+        lastAppliedTrackingConfig = null
         applyLocationStyle()
         updateDisplayLocation()
     }
@@ -755,12 +763,33 @@ class HudMapController(
 
     private fun applyTrackingConfig() {
         val component = locationComponent ?: return
-        component.paddingWhileTracking(trackingPaddingValues())
-        component.zoomWhileTracking(resolveTargetZoom(currentSettings, currentSpeedBucketKmh))
-        component.tiltWhileTracking(currentSettings.tilt)
-        trackingPadding().also { padding ->
-            mapLibreMap?.setPadding(padding[0], padding[1], padding[2], padding[3])
-        }
+        val padding = trackingPadding()
+        val trackingConfig = TrackingConfig(
+            paddingLeft = padding[0],
+            paddingTop = padding[1],
+            paddingRight = padding[2],
+            paddingBottom = padding[3],
+            zoom = resolveTargetZoom(currentSettings, currentSpeedBucketKmh),
+            tilt = currentSettings.tilt
+        )
+        if (trackingConfig == lastAppliedTrackingConfig) return
+        lastAppliedTrackingConfig = trackingConfig
+        component.paddingWhileTracking(
+            doubleArrayOf(
+                trackingConfig.paddingLeft.toDouble(),
+                trackingConfig.paddingTop.toDouble(),
+                trackingConfig.paddingRight.toDouble(),
+                trackingConfig.paddingBottom.toDouble()
+            )
+        )
+        component.zoomWhileTracking(trackingConfig.zoom)
+        component.tiltWhileTracking(trackingConfig.tilt)
+        mapLibreMap?.setPadding(
+            trackingConfig.paddingLeft,
+            trackingConfig.paddingTop,
+            trackingConfig.paddingRight,
+            trackingConfig.paddingBottom
+        )
     }
 
     private fun trackingPadding(): IntArray {
@@ -930,44 +959,8 @@ class HudMapController(
         return dp(settings.arrowOffsetDp)
     }
 
-    private fun hasTripStatusLayoutChanged(state: NavigationHudState): Boolean {
-        val layoutKey = buildTripStatusLayoutKey(state)
-        if (layoutKey == lastTripStatusLayoutKey) return false
-        lastTripStatusLayoutKey = layoutKey
-        return true
-    }
-
     private fun resolveActiveTripStatusHeightPx(): Int {
-        if (!currentSettings.tripStatusEnabled) return 0
-        val state = NavigationHudStore.snapshot()
-        if (!hasTripStatusContent(state)) return 0
-        val hasProgressBitmap = state.tripStatusBitmap?.let { bitmap ->
-            !bitmap.isRecycled && bitmap.width > 0 && bitmap.height > 0
-        } == true
-        return resolveMapTripStatusHeightPx(
-            mapHeightPx = mapView.height.coerceAtLeast(1),
-            hasProgressBitmap = hasProgressBitmap
-        )
-    }
-
-    private fun hasTripStatusContent(state: NavigationHudState): Boolean {
-        val hasBitmap = state.tripStatusBitmap?.let { bitmap ->
-            !bitmap.isRecycled && bitmap.width > 0 && bitmap.height > 0
-        } == true
-        return hasBitmap ||
-            state.distance.isNotBlank() ||
-            state.arrival.isNotBlank() ||
-            state.time.isNotBlank()
-    }
-
-    private fun buildTripStatusLayoutKey(state: NavigationHudState): String {
-        val bitmap = state.tripStatusBitmap
-        val bitmapKey = if (bitmap != null && !bitmap.isRecycled && bitmap.width > 0 && bitmap.height > 0) {
-            "${bitmap.generationId}:${bitmap.width}x${bitmap.height}"
-        } else {
-            "none"
-        }
-        return "${currentSettings.tripStatusEnabled}|${state.distance}|${state.arrival}|${state.time}|$bitmapKey"
+        return currentTripStatusReservedHeightPx
     }
 
     private fun renderResourceToBitmap(resourceId: Int, sizePx: Int): Bitmap? {
@@ -1116,6 +1109,15 @@ private data class LaneManeuverFeatureCollection(
 private data class LaneManeuverImage(
     val offsetX: Float,
     val offsetY: Float,
+)
+
+private data class TrackingConfig(
+    val paddingLeft: Int,
+    val paddingTop: Int,
+    val paddingRight: Int,
+    val paddingBottom: Int,
+    val zoom: Double,
+    val tilt: Double,
 )
 
 private data class VisibleRouteSegment(

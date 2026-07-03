@@ -49,6 +49,9 @@ data class NavigationHudState(
     val hudSpeedCamFlag: Int? = null,
     val hudSpeedLimit1: Int? = null,
     val hudSpeedUpdatedAt: Long = 0L,
+    val strelkaActive: Boolean = false,
+    val strelkaBitmap: Bitmap? = null,
+    val strelkaUpdatedAt: Long = 0L,
     val roadCameraId: String? = null,
     val roadCameraDistance: String? = null,
     val roadCameraIcon: Bitmap? = null,
@@ -74,6 +77,8 @@ data class NavigationHudState(
             tripStatusBitmap == null &&
             !hudSpeedHasCamera &&
             !hudSpeedHasGps &&
+            !strelkaActive &&
+            strelkaBitmap == null &&
             trafficLights.isEmpty() &&
             !turnSignalLeft &&
             !turnSignalRight &&
@@ -110,7 +115,8 @@ object NavigationHudStore {
         timestamp: Long = System.currentTimeMillis(),
         preserveSpeedLimit: Boolean = false,
         preserveRoadCamera: Boolean = false,
-        preserveHudSpeed: Boolean = false
+        preserveHudSpeed: Boolean = false,
+        preserveStrelka: Boolean = false
     ) {
         android.util.Log.d("NavigationHudStore", "reset() called: action=$lastAction")
         update { current ->
@@ -152,6 +158,9 @@ object NavigationHudStore {
                 hudSpeedCamFlag = if (preserveHudSpeed) current.hudSpeedCamFlag else null,
                 hudSpeedLimit1 = if (preserveHudSpeed) current.hudSpeedLimit1 else null,
                 hudSpeedUpdatedAt = if (preserveHudSpeed) current.hudSpeedUpdatedAt else 0L,
+                strelkaActive = if (preserveStrelka) current.strelkaActive else false,
+                strelkaBitmap = if (preserveStrelka) current.strelkaBitmap else null,
+                strelkaUpdatedAt = if (preserveStrelka) current.strelkaUpdatedAt else 0L,
                 roadCameraId = if (preserveRoadCamera) current.roadCameraId else null,
                 roadCameraDistance = if (preserveRoadCamera) current.roadCameraDistance else null,
                 roadCameraIcon = if (preserveRoadCamera) current.roadCameraIcon else null,

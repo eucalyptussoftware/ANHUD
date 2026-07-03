@@ -5,6 +5,17 @@ import android.graphics.PointF
 import kotlin.math.abs
 
 object OverlayPrefs {
+    enum class HudAlertSource(val storedValue: String) {
+        HUDSPEED("HUDSPEED"),
+        STRELKA("STRELKA");
+
+        companion object {
+            fun fromStoredValue(value: String?): HudAlertSource {
+                return entries.firstOrNull { it.storedValue == value } ?: HUDSPEED
+            }
+        }
+    }
+
     internal enum class DynamicHideTurnSpeedBucket {
         UP_TO_40,
         FROM_40_TO_60,
@@ -67,8 +78,11 @@ object OverlayPrefs {
     private const val KEY_ARROW_Y_DP = "overlay_arrow_y_dp"
     private const val KEY_SPEED_X_DP = "overlay_speed_x_dp"
     private const val KEY_SPEED_Y_DP = "overlay_speed_y_dp"
+    private const val KEY_HUD_ALERT_SOURCE = "overlay_hud_alert_source"
     private const val KEY_HUDSPEED_X_DP = "overlay_hudspeed_x_dp"
     private const val KEY_HUDSPEED_Y_DP = "overlay_hudspeed_y_dp"
+    private const val KEY_STRELKA_X_DP = "overlay_strelka_x_dp"
+    private const val KEY_STRELKA_Y_DP = "overlay_strelka_y_dp"
     private const val KEY_ROAD_CAMERA_X_DP = "overlay_road_camera_x_dp"
     private const val KEY_ROAD_CAMERA_Y_DP = "overlay_road_camera_y_dp"
     private const val KEY_TRAFFIC_LIGHT_X_DP = "overlay_traffic_light_x_dp"
@@ -87,6 +101,7 @@ object OverlayPrefs {
     private const val KEY_ARROW_SCALE = "overlay_arrow_scale"
     private const val KEY_SPEED_SCALE = "overlay_speed_scale"
     private const val KEY_HUDSPEED_SCALE = "overlay_hudspeed_scale"
+    private const val KEY_STRELKA_SCALE = "overlay_strelka_scale"
     private const val KEY_ROAD_CAMERA_SCALE = "overlay_road_camera_scale"
     private const val KEY_TRAFFIC_LIGHT_SCALE = "overlay_traffic_light_scale"
     private const val KEY_SPEEDOMETER_SCALE = "overlay_speedometer_scale"
@@ -103,6 +118,7 @@ object OverlayPrefs {
     private const val KEY_ARROW_ALPHA = "overlay_arrow_alpha"
     private const val KEY_SPEED_ALPHA = "overlay_speed_alpha"
     private const val KEY_HUDSPEED_ALPHA = "overlay_hudspeed_alpha"
+    private const val KEY_STRELKA_ALPHA = "overlay_strelka_alpha"
     private const val KEY_ROAD_CAMERA_ALPHA = "overlay_road_camera_alpha"
     private const val KEY_TRAFFIC_LIGHT_ALPHA = "overlay_traffic_light_alpha"
     private const val KEY_SPEEDOMETER_ALPHA = "overlay_speedometer_alpha"
@@ -122,6 +138,7 @@ object OverlayPrefs {
     private const val KEY_SPEED_LIMIT_FROM_HUDSPEED = "overlay_speed_limit_from_hudspeed"
     private const val KEY_HUDSPEED_ENABLED = "overlay_hudspeed_enabled"
     private const val KEY_HUDSPEED_HIDE_WHEN_MAP_ACTIVE = "overlay_hudspeed_hide_when_map_active"
+    private const val KEY_STRELKA_HIDE_WHEN_MAP_ACTIVE = "overlay_strelka_hide_when_map_active"
     private const val KEY_HUDSPEED_GPS_STATUS_ENABLED = "overlay_hudspeed_gps_status_enabled"
     private const val KEY_HUDSPEED_LIMIT_ENABLED = "overlay_hudspeed_limit_enabled"
     private const val KEY_HUDSPEED_LIMIT_ALERT_ENABLED = "overlay_hudspeed_limit_alert_enabled"
@@ -316,6 +333,17 @@ object OverlayPrefs {
             .apply()
     }
 
+    fun hudAlertSource(context: Context): HudAlertSource {
+        val stored = prefs(context).getString(KEY_HUD_ALERT_SOURCE, null)
+        return HudAlertSource.fromStoredValue(stored)
+    }
+
+    fun setHudAlertSource(context: Context, source: HudAlertSource) {
+        prefs(context).edit()
+            .putString(KEY_HUD_ALERT_SOURCE, source.storedValue)
+            .apply()
+    }
+
     fun hudSpeedPositionDp(context: Context): PointF {
         val prefs = prefs(context)
         val containerWidthDp = containerSizeDp(context).x
@@ -330,6 +358,21 @@ object OverlayPrefs {
         prefs(context).edit()
             .putFloat(KEY_HUDSPEED_X_DP, xDp)
             .putFloat(KEY_HUDSPEED_Y_DP, yDp)
+            .apply()
+    }
+
+    fun strelkaPositionDp(context: Context): PointF {
+        val prefs = prefs(context)
+        val hudSpeedPosition = hudSpeedPositionDp(context)
+        val x = prefs.getFloat(KEY_STRELKA_X_DP, hudSpeedPosition.x)
+        val y = prefs.getFloat(KEY_STRELKA_Y_DP, hudSpeedPosition.y)
+        return PointF(x, y)
+    }
+
+    fun setStrelkaPositionDp(context: Context, xDp: Float, yDp: Float) {
+        prefs(context).edit()
+            .putFloat(KEY_STRELKA_X_DP, xDp)
+            .putFloat(KEY_STRELKA_Y_DP, yDp)
             .apply()
     }
 
@@ -502,6 +545,16 @@ object OverlayPrefs {
     fun setHudSpeedScale(context: Context, scale: Float) {
         prefs(context).edit()
             .putFloat(KEY_HUDSPEED_SCALE, scale)
+            .apply()
+    }
+
+    fun strelkaScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_STRELKA_SCALE, 1f)
+    }
+
+    fun setStrelkaScale(context: Context, scale: Float) {
+        prefs(context).edit()
+            .putFloat(KEY_STRELKA_SCALE, scale)
             .apply()
     }
 
@@ -722,6 +775,16 @@ object OverlayPrefs {
     fun setHudSpeedAlpha(context: Context, alpha: Float) {
         prefs(context).edit()
             .putFloat(KEY_HUDSPEED_ALPHA, alpha)
+            .apply()
+    }
+
+    fun strelkaAlpha(context: Context): Float {
+        return prefs(context).getFloat(KEY_STRELKA_ALPHA, 1f)
+    }
+
+    fun setStrelkaAlpha(context: Context, alpha: Float) {
+        prefs(context).edit()
+            .putFloat(KEY_STRELKA_ALPHA, alpha)
             .apply()
     }
 
@@ -953,6 +1016,16 @@ object OverlayPrefs {
     fun setHudSpeedHideWhenMapActive(context: Context, enabled: Boolean) {
         prefs(context).edit()
             .putBoolean(KEY_HUDSPEED_HIDE_WHEN_MAP_ACTIVE, enabled)
+            .apply()
+    }
+
+    fun strelkaHideWhenMapActive(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_STRELKA_HIDE_WHEN_MAP_ACTIVE, false)
+    }
+
+    fun setStrelkaHideWhenMapActive(context: Context, enabled: Boolean) {
+        prefs(context).edit()
+            .putBoolean(KEY_STRELKA_HIDE_WHEN_MAP_ACTIVE, enabled)
             .apply()
     }
 

@@ -1,5 +1,7 @@
 package com.g992.anhud
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.PointF
 import android.util.TypedValue
 import android.view.Gravity
@@ -14,7 +16,6 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Button
 import android.widget.TextView
-import android.graphics.Color
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import kotlin.math.max
@@ -28,6 +29,7 @@ internal enum class OverlayTarget(val previewKey: String) {
     ARROW(OverlayBroadcasts.PREVIEW_TARGET_ARROW),
     SPEED(OverlayBroadcasts.PREVIEW_TARGET_SPEED),
     HUDSPEED(OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED),
+    STRELKA(OverlayBroadcasts.PREVIEW_TARGET_STRELKA),
     ROAD_CAMERA(OverlayBroadcasts.PREVIEW_TARGET_ROAD_CAMERA),
     TRAFFIC_LIGHT(OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT),
     SPEEDOMETER(OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER),
@@ -50,6 +52,9 @@ internal fun MainActivity.openPositionDialog(
     val previewMapTripStatus = dialogView.findViewById<MapTripStatusView>(R.id.dialogPreviewMapTripStatus)
     val previewNavBlock = dialogView.findViewById<View>(R.id.dialogPreviewNavBlock)
     val previewLaneGuidanceBlock = dialogView.findViewById<View>(R.id.dialogPreviewLaneGuidanceBlock)
+    val previewLaneGuidancePlaceholder = dialogView.findViewById<TextView>(R.id.dialogPreviewLaneGuidancePlaceholder)
+    val previewLaneGuidanceImage = dialogView.findViewById<ImageView>(R.id.dialogPreviewLaneGuidanceImage)
+    val previewLaneGuidanceDistance = dialogView.findViewById<TextView>(R.id.dialogPreviewLaneGuidanceDistance)
     val previewNavTextColumn = dialogView.findViewById<LinearLayout>(R.id.dialogPreviewNavTextColumn)
     val previewNavPrimary = dialogView.findViewById<TextView>(R.id.dialogPreviewNavPrimary)
     val previewNavSecondary = dialogView.findViewById<TextView>(R.id.dialogPreviewNavSecondary)
@@ -59,6 +64,7 @@ internal fun MainActivity.openPositionDialog(
     val previewHudSpeedBlock = dialogView.findViewById<View>(R.id.dialogPreviewHudSpeedBlock)
     val previewHudSpeedFull = dialogView.findViewById<View>(R.id.dialogPreviewHudSpeedFull)
     val previewHudSpeedCompact = dialogView.findViewById<View>(R.id.dialogPreviewHudSpeedCompact)
+    val previewStrelkaBlock = dialogView.findViewById<ImageView>(R.id.dialogPreviewStrelkaBlock)
     val previewRoadCameraBlock = dialogView.findViewById<View>(R.id.dialogPreviewRoadCameraBlock)
     val previewTrafficLightBlock = dialogView.findViewById<LinearLayout>(R.id.dialogPreviewTrafficLightBlock)
     val previewSpeedometer = dialogView.findViewById<TextView>(R.id.dialogPreviewSpeedometer)
@@ -108,6 +114,7 @@ internal fun MainActivity.openPositionDialog(
     val arrowPosition = OverlayPrefs.arrowPositionDp(this)
     val speedPosition = OverlayPrefs.speedPositionDp(this)
     val hudSpeedPosition = OverlayPrefs.hudSpeedPositionDp(this)
+    val strelkaPosition = OverlayPrefs.strelkaPositionDp(this)
     val roadCameraPosition = OverlayPrefs.roadCameraPositionDp(this)
     val trafficLightPosition = OverlayPrefs.trafficLightPositionDp(this)
     val speedometerPosition = OverlayPrefs.speedometerPositionDp(this)
@@ -125,6 +132,7 @@ internal fun MainActivity.openPositionDialog(
     val arrowPoint = PointF(arrowPosition.x, arrowPosition.y)
     val speedPoint = PointF(speedPosition.x, speedPosition.y)
     val hudSpeedPoint = PointF(hudSpeedPosition.x, hudSpeedPosition.y)
+    val strelkaPoint = PointF(strelkaPosition.x, strelkaPosition.y)
     val roadCameraPoint = PointF(roadCameraPosition.x, roadCameraPosition.y)
     val trafficLightPoint = PointF(trafficLightPosition.x, trafficLightPosition.y)
     val speedometerPoint = PointF(speedometerPosition.x, speedometerPosition.y)
@@ -147,6 +155,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.ARROW -> (OverlayPrefs.arrowScale(this) * 100).toInt()
         OverlayTarget.SPEED -> (OverlayPrefs.speedScale(this) * 100).toInt()
         OverlayTarget.HUDSPEED -> (OverlayPrefs.hudSpeedScale(this) * 100).toInt()
+        OverlayTarget.STRELKA -> (OverlayPrefs.strelkaScale(this) * 100).toInt()
         OverlayTarget.ROAD_CAMERA -> (OverlayPrefs.roadCameraScale(this) * 100).toInt()
         OverlayTarget.TRAFFIC_LIGHT -> (OverlayPrefs.trafficLightScale(this) * 100).toInt()
         OverlayTarget.SPEEDOMETER -> (OverlayPrefs.speedometerScale(this) * 100).toInt()
@@ -161,6 +170,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.ARROW -> (OverlayPrefs.arrowAlpha(this) * 100).toInt()
         OverlayTarget.SPEED -> (OverlayPrefs.speedAlpha(this) * 100).toInt()
         OverlayTarget.HUDSPEED -> (OverlayPrefs.hudSpeedAlpha(this) * 100).toInt()
+        OverlayTarget.STRELKA -> (OverlayPrefs.strelkaAlpha(this) * 100).toInt()
         OverlayTarget.ROAD_CAMERA -> (OverlayPrefs.roadCameraAlpha(this) * 100).toInt()
         OverlayTarget.TRAFFIC_LIGHT -> (OverlayPrefs.trafficLightAlpha(this) * 100).toInt()
         OverlayTarget.SPEEDOMETER -> (OverlayPrefs.speedometerAlpha(this) * 100).toInt()
@@ -177,6 +187,7 @@ internal fun MainActivity.openPositionDialog(
     previewSpeedometer.text = buildSpeedometerPreviewText(speedometerShowUnitText)
     previewSpeedometer.gravity = Gravity.CENTER
     previewSpeedometer.textAlignment = View.TEXT_ALIGNMENT_CENTER
+    previewStrelkaBlock.setImageBitmap(StrelkaPreviewBitmapFactory.create(this))
     val previewSpeedometerWidthPx = max(
         previewSpeedometer.paint.measureText(getString(R.string.preview_speedometer_text)),
         previewSpeedometer.paint.measureText(getString(R.string.speedometer_unit_text))
@@ -185,6 +196,71 @@ internal fun MainActivity.openPositionDialog(
         .coerceAtLeast(1)
     previewSpeedometer.minWidth = previewSpeedometerWidthPx
     previewSpeedometer.maxWidth = previewSpeedometerWidthPx
+
+    var laneGuidancePreviewBitmapSourceToken = Int.MIN_VALUE
+    var laneGuidancePreviewBitmapSourceGenId = -1
+    var laneGuidancePreviewBitmapSourceWidth = 0
+    var laneGuidancePreviewBitmapSourceHeight = 0
+    var laneGuidancePreviewBitmap: Bitmap? = null
+
+    fun clearLaneGuidancePreviewBitmapCache() {
+        laneGuidancePreviewBitmapSourceToken = Int.MIN_VALUE
+        laneGuidancePreviewBitmapSourceGenId = -1
+        laneGuidancePreviewBitmapSourceWidth = 0
+        laneGuidancePreviewBitmapSourceHeight = 0
+        laneGuidancePreviewBitmap = null
+    }
+
+    fun resolvePreviewLaneGuidanceBitmap(maneuver: MapLaneManeuver): Bitmap {
+        val source = maneuver.bitmap
+        val token = maneuver.token
+        val generationId = source.generationId
+        val width = source.width
+        val height = source.height
+        if (
+            laneGuidancePreviewBitmap != null &&
+            laneGuidancePreviewBitmapSourceToken == token &&
+            laneGuidancePreviewBitmapSourceGenId == generationId &&
+            laneGuidancePreviewBitmapSourceWidth == width &&
+            laneGuidancePreviewBitmapSourceHeight == height
+        ) {
+            return laneGuidancePreviewBitmap ?: source
+        }
+        val prepared = LaneGuidanceHudRenderHelper.prepareBitmap(source)
+        laneGuidancePreviewBitmapSourceToken = token
+        laneGuidancePreviewBitmapSourceGenId = generationId
+        laneGuidancePreviewBitmapSourceWidth = width
+        laneGuidancePreviewBitmapSourceHeight = height
+        laneGuidancePreviewBitmap = prepared
+        return prepared
+    }
+
+    fun updatePreviewLaneGuidanceContent() {
+        val maneuver = MapRouteTelemetryStore.current().laneManeuver
+        val bitmap = maneuver?.bitmap?.takeUnless { it.isRecycled || it.width <= 0 || it.height <= 0 }
+        if (bitmap != null) {
+            previewLaneGuidanceImage.setImageBitmap(resolvePreviewLaneGuidanceBitmap(maneuver))
+            previewLaneGuidanceImage.visibility = View.VISIBLE
+            previewLaneGuidancePlaceholder.visibility = View.GONE
+            previewLaneGuidanceDistance.text = LaneGuidanceHudRenderHelper.formatDistance(maneuver.distanceMeters)
+            previewLaneGuidanceDistance.visibility = if (OverlayPrefs.laneGuidanceShowDistance(activity)) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+            return
+        }
+        clearLaneGuidancePreviewBitmapCache()
+        previewLaneGuidanceImage.setImageDrawable(null)
+        previewLaneGuidanceImage.visibility = View.GONE
+        previewLaneGuidancePlaceholder.visibility = View.VISIBLE
+        previewLaneGuidanceDistance.text = getString(R.string.preview_hudspeed_distance)
+        previewLaneGuidanceDistance.visibility = if (OverlayPrefs.laneGuidanceShowDistance(activity)) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
 
     fun applyNavTextScale(scale: Float) {
         previewNavPrimary.setTextSize(TypedValue.COMPLEX_UNIT_PX, navPrimaryBasePx * scale)
@@ -242,6 +318,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.ARROW -> getString(R.string.position_arrow_block_label)
         OverlayTarget.SPEED -> getString(R.string.position_speed_block_label)
         OverlayTarget.HUDSPEED -> getString(R.string.position_hudspeed_block_label)
+        OverlayTarget.STRELKA -> getString(R.string.position_strelka_block_label)
         OverlayTarget.ROAD_CAMERA -> getString(R.string.position_road_camera_block_label)
         OverlayTarget.TRAFFIC_LIGHT -> getString(R.string.position_traffic_light_block_label)
         OverlayTarget.SPEEDOMETER -> getString(R.string.position_speedometer_block_label)
@@ -274,6 +351,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.ARROW -> OverlayPrefs.arrowHideWhenMapActive(activity)
         OverlayTarget.SPEED -> OverlayPrefs.speedHideWhenMapActive(activity)
         OverlayTarget.HUDSPEED -> OverlayPrefs.hudSpeedHideWhenMapActive(activity)
+        OverlayTarget.STRELKA -> OverlayPrefs.strelkaHideWhenMapActive(activity)
         OverlayTarget.ROAD_CAMERA -> OverlayPrefs.roadCameraHideWhenMapActive(activity)
         OverlayTarget.TRAFFIC_LIGHT -> OverlayPrefs.trafficLightHideWhenMapActive(activity)
         OverlayTarget.SPEEDOMETER -> OverlayPrefs.speedometerHideWhenMapActive(activity)
@@ -489,13 +567,21 @@ internal fun MainActivity.openPositionDialog(
             navWidthDp = navWidthDp.coerceIn(OverlayPrefs.NAV_WIDTH_MIN_DP, containerWidthDp)
         }
         val showOthers = showOthersCheck.isChecked
+        val sharedAlertSource = OverlayPrefs.hudAlertSource(activity)
         val showNav = target == OverlayTarget.NAVIGATION || (showOthers && OverlayPrefs.navEnabled(activity))
         val showLaneGuidance = target == OverlayTarget.LANE_GUIDANCE ||
             (showOthers && OverlayPrefs.laneGuidanceEnabled(activity))
         val showMap = target == OverlayTarget.MAP || (showOthers && OverlayPrefs.mapEnabled(activity))
         val showArrow = target == OverlayTarget.ARROW || (showOthers && OverlayPrefs.arrowEnabled(activity))
         val showSpeed = target == OverlayTarget.SPEED || (showOthers && OverlayPrefs.speedEnabled(activity))
-        val showHudSpeed = target == OverlayTarget.HUDSPEED || (showOthers && OverlayPrefs.hudSpeedEnabled(activity))
+        val showHudSpeed = target == OverlayTarget.HUDSPEED ||
+            (showOthers &&
+                sharedAlertSource == OverlayPrefs.HudAlertSource.HUDSPEED &&
+                OverlayPrefs.hudSpeedEnabled(activity))
+        val showStrelka = target == OverlayTarget.STRELKA ||
+            (showOthers &&
+                sharedAlertSource == OverlayPrefs.HudAlertSource.STRELKA &&
+                OverlayPrefs.hudSpeedEnabled(activity))
         val showRoadCamera = target == OverlayTarget.ROAD_CAMERA ||
             (showOthers && OverlayPrefs.roadCameraEnabled(activity))
         val showTrafficLight = target == OverlayTarget.TRAFFIC_LIGHT ||
@@ -511,6 +597,7 @@ internal fun MainActivity.openPositionDialog(
         previewArrowBlock.visibility = if (showArrow) View.VISIBLE else View.GONE
         previewSpeedLimit.visibility = if (showSpeed) View.VISIBLE else View.GONE
         previewHudSpeedBlock.visibility = if (showHudSpeed) View.VISIBLE else View.GONE
+        previewStrelkaBlock.visibility = if (showStrelka) View.VISIBLE else View.GONE
         val showHudSpeedLimit = OverlayPrefs.hudSpeedLimitEnabled(activity)
         previewHudSpeedFull.visibility = if (showHudSpeedLimit) View.VISIBLE else View.GONE
         previewHudSpeedCompact.visibility = if (showHudSpeedLimit) View.GONE else View.VISIBLE
@@ -623,18 +710,21 @@ internal fun MainActivity.openPositionDialog(
             }
         }
         if (showLaneGuidance) {
+            updatePreviewLaneGuidanceContent()
             previewLaneGuidanceBlock.pivotX = 0f
             previewLaneGuidanceBlock.pivotY = 0f
             previewLaneGuidanceBlock.scaleX = currentScale
             previewLaneGuidanceBlock.scaleY = currentScale
-            positionPreviewView(
-                previewHudContainer,
-                previewLaneGuidanceBlock,
-                laneGuidancePoint.x,
-                laneGuidancePoint.y,
-                containerWidthPx,
-                containerHeightPx
-            )
+            previewLaneGuidanceBlock.post {
+                positionPreviewView(
+                    previewHudContainer,
+                    previewLaneGuidanceBlock,
+                    laneGuidancePoint.x,
+                    laneGuidancePoint.y,
+                    containerWidthPx,
+                    containerHeightPx
+                )
+            }
             previewLaneGuidanceBlock.alpha = if (target == OverlayTarget.LANE_GUIDANCE) {
                 brightnessSeek.progress.coerceIn(0, 100) / 100f
             } else {
@@ -698,6 +788,25 @@ internal fun MainActivity.openPositionDialog(
                 brightnessSeek.progress.coerceIn(0, 100) / 100f
             } else {
                 OverlayPrefs.hudSpeedAlpha(activity).coerceIn(0f, 1f)
+            }
+        }
+        if (showStrelka) {
+            previewStrelkaBlock.pivotX = 0f
+            previewStrelkaBlock.pivotY = 0f
+            previewStrelkaBlock.scaleX = currentScale
+            previewStrelkaBlock.scaleY = currentScale
+            positionPreviewView(
+                previewHudContainer,
+                previewStrelkaBlock,
+                strelkaPoint.x,
+                strelkaPoint.y,
+                containerWidthPx,
+                containerHeightPx
+            )
+            previewStrelkaBlock.alpha = if (target == OverlayTarget.STRELKA) {
+                brightnessSeek.progress.coerceIn(0, 100) / 100f
+            } else {
+                OverlayPrefs.strelkaAlpha(activity).coerceIn(0f, 1f)
             }
         }
         if (showRoadCamera) {
@@ -787,6 +896,7 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.ARROW -> previewArrowBlock
             OverlayTarget.SPEED -> previewSpeedLimit
             OverlayTarget.HUDSPEED -> previewHudSpeedBlock
+            OverlayTarget.STRELKA -> previewStrelkaBlock
             OverlayTarget.ROAD_CAMERA -> previewRoadCameraBlock
             OverlayTarget.TRAFFIC_LIGHT -> previewTrafficLightBlock
             OverlayTarget.SPEEDOMETER -> previewSpeedometer
@@ -894,6 +1004,19 @@ internal fun MainActivity.openPositionDialog(
                 }
                 notifyOverlaySettingsChanged(
                     hudSpeedPosition = point,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+            }
+            OverlayTarget.STRELKA -> {
+                if (persist) {
+                    OverlayPrefs.setStrelkaPositionDp(this, dpX, dpY)
+                    strelkaPoint.x = dpX
+                    strelkaPoint.y = dpY
+                }
+                notifyOverlaySettingsChanged(
+                    strelkaPosition = point,
                     preview = true,
                     previewTarget = target,
                     previewShowOthers = showOthersCheck.isChecked
@@ -1091,6 +1214,7 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.ARROW -> previewArrowBlock
             OverlayTarget.SPEED -> previewSpeedLimit
             OverlayTarget.HUDSPEED -> previewHudSpeedBlock
+            OverlayTarget.STRELKA -> previewStrelkaBlock
             OverlayTarget.ROAD_CAMERA -> previewRoadCameraBlock
             OverlayTarget.TRAFFIC_LIGHT -> previewTrafficLightBlock
             OverlayTarget.SPEEDOMETER -> previewSpeedometer
@@ -1279,6 +1403,12 @@ internal fun MainActivity.openPositionDialog(
                     previewTarget = target,
                     previewShowOthers = showOthersCheck.isChecked
                 )
+                OverlayTarget.STRELKA -> notifyOverlaySettingsChanged(
+                    strelkaScale = scale,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
                 OverlayTarget.ROAD_CAMERA -> notifyOverlaySettingsChanged(
                     roadCameraScale = scale,
                     preview = true,
@@ -1370,6 +1500,15 @@ internal fun MainActivity.openPositionDialog(
                     OverlayPrefs.setHudSpeedScale(activity, scale)
                     notifyOverlaySettingsChanged(
                         hudSpeedScale = scale,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.STRELKA -> {
+                    OverlayPrefs.setStrelkaScale(activity, scale)
+                    notifyOverlaySettingsChanged(
+                        strelkaScale = scale,
                         preview = true,
                         previewTarget = target,
                         previewShowOthers = showOthersCheck.isChecked
@@ -1484,6 +1623,15 @@ internal fun MainActivity.openPositionDialog(
                     previewHudSpeedBlock.alpha = alpha
                     notifyOverlaySettingsChanged(
                         hudSpeedAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.STRELKA -> {
+                    previewStrelkaBlock.alpha = alpha
+                    notifyOverlaySettingsChanged(
+                        strelkaAlpha = alpha,
                         preview = true,
                         previewTarget = target,
                         previewShowOthers = showOthersCheck.isChecked
@@ -1606,6 +1754,15 @@ internal fun MainActivity.openPositionDialog(
                         previewShowOthers = showOthersCheck.isChecked
                     )
                 }
+                OverlayTarget.STRELKA -> {
+                    OverlayPrefs.setStrelkaAlpha(activity, alpha)
+                    notifyOverlaySettingsChanged(
+                        strelkaAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
                 OverlayTarget.ROAD_CAMERA -> {
                     OverlayPrefs.setRoadCameraAlpha(activity, alpha)
                     notifyOverlaySettingsChanged(
@@ -1676,6 +1833,7 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.ARROW -> OverlayPrefs.setArrowHideWhenMapActive(activity, isChecked)
             OverlayTarget.SPEED -> OverlayPrefs.setSpeedHideWhenMapActive(activity, isChecked)
             OverlayTarget.HUDSPEED -> OverlayPrefs.setHudSpeedHideWhenMapActive(activity, isChecked)
+            OverlayTarget.STRELKA -> OverlayPrefs.setStrelkaHideWhenMapActive(activity, isChecked)
             OverlayTarget.ROAD_CAMERA -> OverlayPrefs.setRoadCameraHideWhenMapActive(activity, isChecked)
             OverlayTarget.TRAFFIC_LIGHT -> OverlayPrefs.setTrafficLightHideWhenMapActive(activity, isChecked)
             OverlayTarget.SPEEDOMETER -> OverlayPrefs.setSpeedometerHideWhenMapActive(activity, isChecked)

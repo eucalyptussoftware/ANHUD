@@ -106,22 +106,48 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <FrameLayout
+            <LinearLayout
                 android:id="@+id/dialogPreviewLaneGuidanceBlock"
-                android:layout_width="96dp"
-                android:layout_height="48dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
                 android:visibility="gone">
 
                 <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:id="@+id/dialogPreviewLaneGuidancePlaceholder"
+                    android:layout_width="96dp"
+                    android:layout_height="48dp"
                     android:gravity="center"
                     android:padding="8dp"
                     android:text="@string/position_lane_guidance_block_label"
                     android:textColor="@color/white"
                     android:textSize="10sp"
                     android:textStyle="bold" />
-            </FrameLayout>
+
+                <ImageView
+                    android:id="@+id/dialogPreviewLaneGuidanceImage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/position_lane_guidance_block_label"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/dialogPreviewLaneGuidanceDistance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="@string/preview_hudspeed_distance"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <FrameLayout
                 android:id="@+id/dialogPreviewArrowBlock"
@@ -262,6 +288,15 @@
                     </LinearLayout>
                 </LinearLayout>
             </FrameLayout>
+
+            <ImageView
+                android:id="@+id/dialogPreviewStrelkaBlock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/position_strelka_block_label"
+                android:scaleType="fitStart"
+                android:visibility="gone" />
 
             <LinearLayout
                 android:id="@+id/dialogPreviewRoadCameraBlock"

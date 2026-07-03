@@ -38,8 +38,11 @@ class HudBackgroundService : Service() {
                 val arrowY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ARROW_Y_DP, Float.NaN)
                 val speedX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEED_X_DP, Float.NaN)
                 val speedY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEED_Y_DP, Float.NaN)
+                val hudAlertSource = intent.getStringExtra(OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE)
                 val hudSpeedX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_HUDSPEED_X_DP, Float.NaN)
                 val hudSpeedY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_HUDSPEED_Y_DP, Float.NaN)
+                val strelkaX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_STRELKA_X_DP, Float.NaN)
+                val strelkaY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_STRELKA_Y_DP, Float.NaN)
                 val roadCameraX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_X_DP, Float.NaN)
                 val roadCameraY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_Y_DP, Float.NaN)
                 val trafficLightX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_X_DP, Float.NaN)
@@ -65,6 +68,7 @@ class HudBackgroundService : Service() {
                 val arrowScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ARROW_SCALE, Float.NaN)
                 val speedScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEED_SCALE, Float.NaN)
                 val hudSpeedScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_HUDSPEED_SCALE, Float.NaN)
+                val strelkaScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_STRELKA_SCALE, Float.NaN)
                 val roadCameraScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_SCALE, Float.NaN)
                 val trafficLightScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_SCALE, Float.NaN)
                 val speedometerScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_SCALE, Float.NaN)
@@ -84,6 +88,7 @@ class HudBackgroundService : Service() {
                 val arrowAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ARROW_ALPHA, Float.NaN)
                 val speedAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEED_ALPHA, Float.NaN)
                 val hudSpeedAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ALPHA, Float.NaN)
+                val strelkaAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_STRELKA_ALPHA, Float.NaN)
                 val roadCameraAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ALPHA, Float.NaN)
                 val trafficLightAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_ALPHA, Float.NaN)
                 val speedometerAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ALPHA, Float.NaN)
@@ -226,6 +231,11 @@ class HudBackgroundService : Service() {
                 } else {
                     null
                 }
+                val strelkaPosition = if (!strelkaX.isNaN() && !strelkaY.isNaN()) {
+                    android.graphics.PointF(strelkaX, strelkaY)
+                } else {
+                    null
+                }
                 val roadCameraPosition = if (!roadCameraX.isNaN() && !roadCameraY.isNaN()) {
                     android.graphics.PointF(roadCameraX, roadCameraY)
                 } else {
@@ -273,6 +283,7 @@ class HudBackgroundService : Service() {
                 val arrowScaleValue = arrowScale.takeIf { !it.isNaN() }
                 val speedScaleValue = speedScale.takeIf { !it.isNaN() }
                 val hudSpeedScaleValue = hudSpeedScale.takeIf { !it.isNaN() }
+                val strelkaScaleValue = strelkaScale.takeIf { !it.isNaN() }
                 val roadCameraScaleValue = roadCameraScale.takeIf { !it.isNaN() }
                 val trafficLightScaleValue = trafficLightScale.takeIf { !it.isNaN() }
                 val speedometerScaleValue = speedometerScale.takeIf { !it.isNaN() }
@@ -284,6 +295,7 @@ class HudBackgroundService : Service() {
                 val arrowAlphaValue = arrowAlpha.takeIf { !it.isNaN() }
                 val speedAlphaValue = speedAlpha.takeIf { !it.isNaN() }
                 val hudSpeedAlphaValue = hudSpeedAlpha.takeIf { !it.isNaN() }
+                val strelkaAlphaValue = strelkaAlpha.takeIf { !it.isNaN() }
                 val roadCameraAlphaValue = roadCameraAlpha.takeIf { !it.isNaN() }
                 val trafficLightAlphaValue = trafficLightAlpha.takeIf { !it.isNaN() }
                 val speedometerAlphaValue = speedometerAlpha.takeIf { !it.isNaN() }
@@ -303,7 +315,9 @@ class HudBackgroundService : Service() {
                     laneGuidancePosition,
                     arrowPosition,
                     speedPosition,
+                    hudAlertSource,
                     hudSpeedPosition,
+                    strelkaPosition,
                     roadCameraPosition,
                     trafficLightPosition,
                     speedometerPosition,
@@ -316,6 +330,7 @@ class HudBackgroundService : Service() {
                     arrowScaleValue,
                     speedScaleValue,
                     hudSpeedScaleValue,
+                    strelkaScaleValue,
                     roadCameraScaleValue,
                     trafficLightScaleValue,
                     speedometerScaleValue,
@@ -328,6 +343,7 @@ class HudBackgroundService : Service() {
                     arrowAlphaValue,
                     speedAlphaValue,
                     hudSpeedAlphaValue,
+                    strelkaAlphaValue,
                     roadCameraAlphaValue,
                     trafficLightAlphaValue,
                     speedometerAlphaValue,

@@ -17,10 +17,17 @@ adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a ACTION_NAME ...
 - `ENABLE` (`bool|0/1|"true"/"false"`): включает или выключает HUD.
 - `STOP_NAVIGATION` (`bool|0/1|"true"/"false"`): завершает активную навигацию.
 - `NAV` (`bool|0/1|"true"/"false"`): показывает или скрывает навигационный блок.
+- `LANE_GUIDANCE` (`bool|0/1|"true"/"false"`): показывает или скрывает блок полос.
+- `ARROW` (`bool|0/1|"true"/"false"`): показывает или скрывает штатную стрелку.
 - `SPEED_LIMIT` (`bool|0/1|"true"/"false"`): показывает или скрывает блок лимита скорости.
+- `HUDSPEED` (`bool|0/1|"true"/"false"`): показывает или скрывает общий слот `HUD Speed / Strelka`.
+- `HUD_ALERT_SOURCE` (`"HUDSPEED"|"STRELKA"`): выбирает, какой источник отображать в общем слоте и на проекции.
+- `ROAD_CAMERA` (`bool|0/1|"true"/"false"`): показывает или скрывает блок камер.
+- `TRAFFIC_LIGHT` (`bool|0/1|"true"/"false"`): показывает или скрывает блок светофоров.
 - `SPEED_ALERT` (`bool|0/1|"true"/"false"`): включает или выключает alert превышения скорости.
 - `SPEED_ALERT_THRESHOLD` (`int`): порог alert превышения.
 - `SPEEDOMETER` (`bool|0/1|"true"/"false"`): показывает или скрывает спидометр.
+- `TURN_SIGNALS` (`bool|0/1|"true"/"false"`): показывает или скрывает блок поворотников.
 - `CLOCK` (`bool|0/1|"true"/"false"`): показывает или скрывает часы.
 - `MAP` (`bool|0/1|"true"/"false"`): показывает или скрывает блок карты.
 
@@ -30,6 +37,8 @@ adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a ACTION_NAME ...
 - `ENABLE=false` выключает HUD и дополнительно останавливает активную навигацию.
 - `STOP_NAVIGATION=true` останавливает маршрут, не выключая сам HUD.
 - Можно передавать только те extras, которые нужно изменить.
+- `HUDSPEED` и `HUD_ALERT_SOURCE` работают вместе: `HUDSPEED` управляет общим `enable`-статусом слота, а `HUD_ALERT_SOURCE` выбирает содержимое этого слота.
+- Если выбран `HUD_ALERT_SOURCE=STRELKA`, входящие данные `HUD Speed` не отображаются, пока источник не переключён обратно.
 
 Примеры:
 
@@ -57,10 +66,21 @@ adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS
 adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS --ez MAP true
 ```
 
+```bash
+adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS --ez ARROW false --ez LANE_GUIDANCE false
+```
+
+```bash
+adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS --ez HUDSPEED false --ez ROAD_CAMERA false --ez TRAFFIC_LIGHT false --ez TURN_SIGNALS false
+```
+
+```bash
+adb shell am broadcast -n com.g992.anhud/.HudStatusReceiver -a G992.ANHUD.STATUS --ez HUDSPEED true --es HUD_ALERT_SOURCE STRELKA
+```
+
 Ограничения текущего контракта `G992.ANHUD.STATUS`:
 
-- Управляет только `ENABLE`, `STOP_NAVIGATION` и частью простых toggle-настроек.
-- Пока не умеет менять видимость следующих HUD-блоков: `LANE_GUIDANCE`, `ARROW`, `HUDSPEED`, `ROAD_CAMERA`, `TRAFFIC_LIGHT`, `TURN_SIGNALS`.
+- Управляет `ENABLE`, `STOP_NAVIGATION` и видимостью основных HUD-блоков.
 - Пока не умеет менять связанные опции вроде `HUDSPEED_LIMIT`, `HUDSPEED_LIMIT_ALERT`, `HUDSPEED_LIMIT_ALERT_THRESHOLD`, `SPEEDOMETER_SHOW_UNIT_TEXT`, `ARROW_ONLY_WHEN_NO_ICON`, `TRAFFIC_LIGHT_MAX_ACTIVE`.
 - Не умеет менять layout/scale/alpha/position/preview-настройки.
 - Для полного набора overlay-настроек сейчас используйте пресеты через `ANHUD_SET_PRESET`.

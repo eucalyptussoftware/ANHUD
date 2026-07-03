@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Build
 import android.util.Log
@@ -55,7 +56,8 @@ class NavigationReceiver : BroadcastReceiver() {
                         update.timestamp,
                         preserveSpeedLimit = true,
                         preserveRoadCamera = true,
-                        preserveHudSpeed = true
+                        preserveHudSpeed = true,
+                        preserveStrelka = true
                     )
                     return
                 }
@@ -403,6 +405,63 @@ class NavigationReceiver : BroadcastReceiver() {
                     )
                 }
             }
+            ACTION_STRELKA_EVENT_START -> {
+                val now = System.currentTimeMillis()
+                Log.d(TAG, "Strelka event started")
+                UiLogStore.append(LogCategory.NAVIGATION, "strelka event: start")
+                NavigationHudStore.update { state ->
+                    state.copy(
+                        strelkaActive = true,
+                        strelkaBitmap = null,
+                        strelkaUpdatedAt = now,
+                        source = SOURCE_STRELKA,
+                        lastUpdated = now,
+                        lastAction = action
+                    )
+                }
+            }
+            ACTION_STRELKA_EVENT_END -> {
+                val now = System.currentTimeMillis()
+                Log.d(TAG, "Strelka event ended")
+                UiLogStore.append(LogCategory.NAVIGATION, "strelka event: end")
+                NavigationHudStore.update { state ->
+                    state.copy(
+                        strelkaActive = false,
+                        strelkaBitmap = null,
+                        strelkaUpdatedAt = now,
+                        source = SOURCE_STRELKA,
+                        lastUpdated = now,
+                        lastAction = action
+                    )
+                }
+            }
+            ACTION_STRELKA_OVERLAY_BITMAP -> {
+                val ready = intent.getBooleanExtra(EXTRA_STRELKA_BITMAP_READY, false)
+                val bitmapBytes = intent.getByteArrayExtra(EXTRA_STRELKA_BITMAP_PNG)
+                val bitmap = decodeStrelkaBitmap(bitmapBytes)
+                val size = if (bitmap != null) "${bitmap.width}x${bitmap.height}" else "none"
+                Log.d(TAG, "Strelka overlay bitmap: ready=$ready bytes=${bitmapBytes?.size ?: 0} bitmap=$size")
+                if (!ready) {
+                    UiLogStore.append(LogCategory.NAVIGATION, "strelka bitmap ignored: ready=false")
+                    return
+                }
+                if (bitmap == null) {
+                    UiLogStore.append(LogCategory.NAVIGATION, "strelka bitmap ignored: decode failed")
+                    return
+                }
+                UiLogStore.append(LogCategory.NAVIGATION, "strelka bitmap=$size")
+                val now = System.currentTimeMillis()
+                NavigationHudStore.update { state ->
+                    state.copy(
+                        strelkaActive = true,
+                        strelkaBitmap = bitmap,
+                        strelkaUpdatedAt = now,
+                        source = SOURCE_STRELKA,
+                        lastUpdated = now,
+                        lastAction = action
+                    )
+                }
+            }
         }
     }
 
@@ -470,6 +529,9 @@ class NavigationReceiver : BroadcastReceiver() {
         const val ACTION_YANDEX_ROUTE_POLYLINE = "com.yandex.ROUTE_POLYLINE"
         const val ACTION_NATIVE_NAV_STOP = "com.g992.anhud.NATIVE_NAV_STOP"
         const val ACTION_HUDSPEED_UPDATE = "air.strelkasd.CAMERA_INFO_CHANGED"
+        const val ACTION_STRELKA_EVENT_START = "com.aleksan.button.STRELKA_EVENT_START"
+        const val ACTION_STRELKA_EVENT_END = "com.aleksan.button.STRELKA_EVENT_END"
+        const val ACTION_STRELKA_OVERLAY_BITMAP = "com.aleksan.button.STRELKA_OVERLAY_BITMAP"
         private const val ACTION_NAV_UPDATES_TIMEOUT = "nav_updates_timeout"
 
         const val EXTRA_MANEUVER_BITMAP = "maneuver_bitmap"
@@ -504,9 +566,12 @@ class NavigationReceiver : BroadcastReceiver() {
         const val HUDSPEED_LIMIT_2 = "limit2"
         const val HUDSPEED_CAM_TYPE = "camType"
         const val HUDSPEED_CAM_FLAG = "camFlag"
+        const val EXTRA_STRELKA_BITMAP_PNG = "bitmap_png"
+        const val EXTRA_STRELKA_BITMAP_READY = "bitmap_ready"
 
         private const val SOURCE_YANDEX = "yandex"
         private const val SOURCE_HUDSPEED = "hudspeed"
+        private const val SOURCE_STRELKA = "strelka"
         const val DEFAULT_NATIVE_TURN_ID = 101
         private const val MAX_SUPPORTED_TURN_ID = 150
 
@@ -735,6 +800,16 @@ class NavigationReceiver : BroadcastReceiver() {
             }
         }
 
+        private fun decodeStrelkaBitmap(bytes: ByteArray?): Bitmap? {
+            if (bytes == null || bytes.isEmpty()) {
+                return null
+            }
+            return runCatching {
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    ?.takeUnless { it.isRecycled || it.width <= 0 || it.height <= 0 }
+            }.getOrNull()
+        }
+
         /**
          * Schedule native navigation update with debouncing.
          * Waits 100ms for more broadcasts to arrive, then sends everything as a batch.
@@ -922,7 +997,8 @@ class NavigationReceiver : BroadcastReceiver() {
                 action,
                 preserveSpeedLimit = true,
                 preserveRoadCamera = true,
-                preserveHudSpeed = true
+                preserveHudSpeed = true,
+                preserveStrelka = true
             )
         }
 

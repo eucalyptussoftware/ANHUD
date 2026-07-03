@@ -80,6 +80,8 @@
     <string name="position_arrow_block_label">Блок стрелки</string>
     <string name="position_speed_block_label">Ограничитель скорости</string>
     <string name="position_hudspeed_block_label">Блок HUD Speed</string>
+    <string name="position_shared_alert_block_label">Блок HUD Speed / Strelka</string>
+    <string name="position_strelka_block_label">Блок Strelka</string>
     <string name="position_road_camera_block_label">Блок камер Яндекс Навигатора</string>
     <string name="position_traffic_light_block_label">Блок светофоров</string>
     <string name="position_speedometer_block_label">Спидометр</string>
@@ -244,6 +246,11 @@
 
     <string name="settings_timeouts_section_title">Таймауты</string>
     <string name="settings_timeouts_section_hint">Камеры, светофоры и завершение поездки</string>
+    <string name="settings_hud_alert_source_title">Источник общего блока предупреждений</string>
+    <string name="settings_hud_alert_source_hint">Определяет, что показывать в общем слоте на главном экране и в проекции.</string>
+    <string name="shared_alert_source_summary">Источник: %1$s</string>
+    <string name="shared_alert_source_hudspeed">HUD Speed</string>
+    <string name="shared_alert_source_strelka">Strelka</string>
     <string name="settings_section_expand">Показать</string>
     <string name="settings_section_collapse">Скрыть</string>
     <string name="camera_timeout_near_label">Таймаут камер (HUD Speed, расстояние &lt; 50м)</string>

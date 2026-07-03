@@ -126,6 +126,8 @@ class MainActivity : ScaledActivity() {
     private lateinit var positionArrowCard: View
     private lateinit var positionSpeedCard: View
     private lateinit var positionHudSpeedCard: View
+    internal lateinit var sharedAlertBlockTitle: TextView
+    internal lateinit var sharedAlertSourceSummary: TextView
     private lateinit var positionRoadCameraCard: View
     private lateinit var positionTrafficLightCard: View
     private lateinit var positionSpeedometerCard: View
@@ -160,8 +162,10 @@ class MainActivity : ScaledActivity() {
     internal lateinit var hudSpeedLimitAlertThresholdRow: View
     internal lateinit var hudSpeedLimitAlertThresholdSeek: SeekBar
     internal lateinit var hudSpeedLimitAlertThresholdValue: TextView
-    private lateinit var hudSpeedPreviewFull: View
-    private lateinit var hudSpeedPreviewCompact: View
+    internal lateinit var hudSpeedPreviewFull: View
+    internal lateinit var hudSpeedPreviewCompact: View
+    internal lateinit var strelkaPreviewImage: ImageView
+    internal lateinit var hudSpeedSpecificOptions: View
     internal lateinit var trafficLightMaxActiveSeek: SeekBar
     internal lateinit var trafficLightMaxActiveValue: TextView
     internal lateinit var trafficLightPreviewContainer: LinearLayout
@@ -228,6 +232,8 @@ class MainActivity : ScaledActivity() {
         positionArrowCard = findViewById(R.id.positionArrowCard)
         positionSpeedCard = findViewById(R.id.positionSpeedCard)
         positionHudSpeedCard = findViewById(R.id.positionHudSpeedCard)
+        sharedAlertBlockTitle = findViewById(R.id.sharedAlertBlockTitle)
+        sharedAlertSourceSummary = findViewById(R.id.sharedAlertSourceSummary)
         positionRoadCameraCard = findViewById(R.id.positionRoadCameraCard)
         positionTrafficLightCard = findViewById(R.id.positionTrafficLightCard)
         positionSpeedometerCard = findViewById(R.id.positionSpeedometerCard)
@@ -264,6 +270,8 @@ class MainActivity : ScaledActivity() {
         hudSpeedLimitAlertThresholdValue = findViewById(R.id.hudSpeedLimitAlertThresholdValue)
         hudSpeedPreviewFull = findViewById(R.id.hudSpeedPreviewFull)
         hudSpeedPreviewCompact = findViewById(R.id.hudSpeedPreviewCompact)
+        strelkaPreviewImage = findViewById(R.id.strelkaPreviewImage)
+        hudSpeedSpecificOptions = findViewById(R.id.hudSpeedSpecificOptions)
         trafficLightMaxActiveSeek = findViewById(R.id.trafficLightMaxActiveSeek)
         trafficLightMaxActiveValue = findViewById(R.id.trafficLightMaxActiveValue)
         trafficLightPreviewContainer = findViewById(R.id.trafficLightPreviewContainer)
@@ -359,7 +367,7 @@ class MainActivity : ScaledActivity() {
             openPositionDialog(OverlayTarget.SPEED)
         }
         positionHudSpeedCard.setOnClickListener {
-            openPositionDialog(OverlayTarget.HUDSPEED)
+            openPositionDialog(currentSharedAlertOverlayTarget())
         }
         positionRoadCameraCard.setOnClickListener {
             openPositionDialog(OverlayTarget.ROAD_CAMERA)
@@ -554,7 +562,7 @@ class MainActivity : ScaledActivity() {
                 return@setOnCheckedChangeListener
             }
             OverlayPrefs.setHudSpeedLimitEnabled(this, isChecked)
-            updateHudSpeedPreviewLayout(isChecked)
+            syncSharedAlertUi()
             notifyOverlaySettingsChanged(hudSpeedLimitEnabled = isChecked)
         }
         hudSpeedLimitAlertCheck.setOnCheckedChangeListener { _, isChecked ->
@@ -593,6 +601,7 @@ class MainActivity : ScaledActivity() {
                 notifyOverlaySettingsChanged(hudSpeedLimitAlertThreshold = threshold)
             }
         })
+        syncSharedAlertUi()
 
         val trafficLightMaxActiveMin = 1
         val trafficLightMaxActiveMax = 3
@@ -882,7 +891,9 @@ class MainActivity : ScaledActivity() {
         laneGuidancePosition: PointF? = null,
         arrowPosition: PointF? = null,
         speedPosition: PointF? = null,
+        hudAlertSource: OverlayPrefs.HudAlertSource? = null,
         hudSpeedPosition: PointF? = null,
+        strelkaPosition: PointF? = null,
         roadCameraPosition: PointF? = null,
         trafficLightPosition: PointF? = null,
         speedometerPosition: PointF? = null,
@@ -896,6 +907,7 @@ class MainActivity : ScaledActivity() {
         speedScale: Float? = null,
         speedTextScale: Float? = null,
         hudSpeedScale: Float? = null,
+        strelkaScale: Float? = null,
         roadCameraScale: Float? = null,
         trafficLightScale: Float? = null,
         speedometerScale: Float? = null,
@@ -907,6 +919,7 @@ class MainActivity : ScaledActivity() {
         arrowAlpha: Float? = null,
         speedAlpha: Float? = null,
         hudSpeedAlpha: Float? = null,
+        strelkaAlpha: Float? = null,
         roadCameraAlpha: Float? = null,
         trafficLightAlpha: Float? = null,
         speedometerAlpha: Float? = null,
@@ -978,9 +991,16 @@ class MainActivity : ScaledActivity() {
             intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_X_DP, speedPosition.x)
             intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_Y_DP, speedPosition.y)
         }
+        if (hudAlertSource != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE, hudAlertSource.storedValue)
+        }
         if (hudSpeedPosition != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_X_DP, hudSpeedPosition.x)
             intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_Y_DP, hudSpeedPosition.y)
+        }
+        if (strelkaPosition != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_X_DP, strelkaPosition.x)
+            intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_Y_DP, strelkaPosition.y)
         }
         if (roadCameraPosition != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_X_DP, roadCameraPosition.x)
@@ -1029,6 +1049,9 @@ class MainActivity : ScaledActivity() {
         if (hudSpeedScale != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_SCALE, hudSpeedScale)
         }
+        if (strelkaScale != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_SCALE, strelkaScale)
+        }
         if (roadCameraScale != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_SCALE, roadCameraScale)
         }
@@ -1061,6 +1084,9 @@ class MainActivity : ScaledActivity() {
         }
         if (hudSpeedAlpha != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ALPHA, hudSpeedAlpha)
+        }
+        if (strelkaAlpha != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_STRELKA_ALPHA, strelkaAlpha)
         }
         if (roadCameraAlpha != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ALPHA, roadCameraAlpha)

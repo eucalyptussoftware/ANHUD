@@ -112,7 +112,6 @@ internal fun MainActivity.syncUiFromPrefs() {
         val hudSpeedLimitAlertEnabled = OverlayPrefs.hudSpeedLimitAlertEnabled(this)
         val hudSpeedLimitAlertThreshold = OverlayPrefs.hudSpeedLimitAlertThreshold(this)
         hudSpeedLimitCheck.isChecked = hudSpeedLimitEnabled
-        updateHudSpeedPreviewLayout(hudSpeedLimitEnabled)
         hudSpeedLimitAlertCheck.isChecked = hudSpeedLimitAlertEnabled
         hudSpeedLimitAlertThresholdRow.visibility =
             if (hudSpeedLimitAlertEnabled) View.VISIBLE else View.GONE
@@ -121,6 +120,7 @@ internal fun MainActivity.syncUiFromPrefs() {
             R.string.speed_limit_alert_threshold_value,
             hudSpeedLimitAlertThreshold
         )
+        syncSharedAlertUi()
 
         val trafficLightMaxActiveMin = 1
         val trafficLightMaxActiveMax = 3
@@ -135,6 +135,37 @@ internal fun MainActivity.syncUiFromPrefs() {
         renderTrafficLightPreview(trafficLightPreviewContainer, trafficLightMaxActive)
     } finally {
         isSyncingUi = false
+    }
+}
+
+internal fun MainActivity.currentSharedAlertOverlayTarget(): OverlayTarget {
+    return when (OverlayPrefs.hudAlertSource(this)) {
+        OverlayPrefs.HudAlertSource.HUDSPEED -> OverlayTarget.HUDSPEED
+        OverlayPrefs.HudAlertSource.STRELKA -> OverlayTarget.STRELKA
+    }
+}
+
+internal fun MainActivity.syncSharedAlertUi() {
+    val source = OverlayPrefs.hudAlertSource(this)
+    val isHudSpeed = source == OverlayPrefs.HudAlertSource.HUDSPEED
+    sharedAlertSourceSummary.text = getString(
+        R.string.shared_alert_source_summary,
+        if (isHudSpeed) {
+            getString(R.string.shared_alert_source_hudspeed)
+        } else {
+            getString(R.string.shared_alert_source_strelka)
+        }
+    )
+    sharedAlertBlockTitle.text = getString(R.string.position_shared_alert_block_label)
+    hudSpeedSpecificOptions.visibility = if (isHudSpeed) View.VISIBLE else View.GONE
+    if (isHudSpeed) {
+        updateHudSpeedPreviewLayout(OverlayPrefs.hudSpeedLimitEnabled(this))
+        strelkaPreviewImage.visibility = View.GONE
+    } else {
+        hudSpeedPreviewFull.visibility = View.GONE
+        hudSpeedPreviewCompact.visibility = View.GONE
+        strelkaPreviewImage.setImageBitmap(StrelkaPreviewBitmapFactory.create(this))
+        strelkaPreviewImage.visibility = View.VISIBLE
     }
 }
 

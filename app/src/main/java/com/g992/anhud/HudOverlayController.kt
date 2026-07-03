@@ -122,6 +122,7 @@ class HudOverlayController(private val context: Context) {
     private var hudSpeedCompactGpsBadge: ImageView? = null
     private var hudSpeedCompactDirection: ImageView? = null
     private var hudSpeedCompactDistance: TextView? = null
+    private var strelkaImageView: ImageView? = null
     private var hudSpeedActiveLayout: View? = null
     private var roadCameraContainer: LinearLayout? = null
     private var roadCameraIconView: ImageView? = null
@@ -159,7 +160,9 @@ class HudOverlayController(private val context: Context) {
     private var laneGuidancePositionDp: PointF = OverlayPrefs.laneGuidancePositionDp(context)
     private var arrowPositionDp: PointF = OverlayPrefs.arrowPositionDp(context)
     private var speedPositionDp: PointF = OverlayPrefs.speedPositionDp(context)
+    private var hudAlertSource: OverlayPrefs.HudAlertSource = OverlayPrefs.hudAlertSource(context)
     private var hudSpeedPositionDp: PointF = OverlayPrefs.hudSpeedPositionDp(context)
+    private var strelkaPositionDp: PointF = OverlayPrefs.strelkaPositionDp(context)
     private var roadCameraPositionDp: PointF = OverlayPrefs.roadCameraPositionDp(context)
     private var trafficLightPositionDp: PointF = OverlayPrefs.trafficLightPositionDp(context)
     private var speedometerPositionDp: PointF = OverlayPrefs.speedometerPositionDp(context)
@@ -172,6 +175,7 @@ class HudOverlayController(private val context: Context) {
     private var arrowScale: Float = OverlayPrefs.arrowScale(context)
     private var speedScale: Float = OverlayPrefs.speedScale(context)
     private var hudSpeedScale: Float = OverlayPrefs.hudSpeedScale(context)
+    private var strelkaScale: Float = OverlayPrefs.strelkaScale(context)
     private var roadCameraScale: Float = OverlayPrefs.roadCameraScale(context)
     private var trafficLightScale: Float = OverlayPrefs.trafficLightScale(context)
     private var speedometerScale: Float = OverlayPrefs.speedometerScale(context)
@@ -184,6 +188,7 @@ class HudOverlayController(private val context: Context) {
     private var arrowAlpha: Float = OverlayPrefs.arrowAlpha(context)
     private var speedAlpha: Float = OverlayPrefs.speedAlpha(context)
     private var hudSpeedAlpha: Float = OverlayPrefs.hudSpeedAlpha(context)
+    private var strelkaAlpha: Float = OverlayPrefs.strelkaAlpha(context)
     private var roadCameraAlpha: Float = OverlayPrefs.roadCameraAlpha(context)
     private var trafficLightAlpha: Float = OverlayPrefs.trafficLightAlpha(context)
     private var speedometerAlpha: Float = OverlayPrefs.speedometerAlpha(context)
@@ -235,6 +240,9 @@ class HudOverlayController(private val context: Context) {
             updateClockText()
             handler.postDelayed(this, CLOCK_TICK_MS)
         }
+    }
+    private val strelkaPreviewBitmap by lazy(LazyThreadSafetyMode.NONE) {
+        StrelkaPreviewBitmapFactory.create(context)
     }
 
     init {
@@ -294,64 +302,74 @@ class HudOverlayController(private val context: Context) {
         }
     }
 
+    private fun shouldPreviewBlock(blockTarget: String, enabled: Boolean): Boolean {
+        return HudOverlayPreviewPolicy.shouldShowBlock(
+            previewMode = previewMode,
+            previewTarget = previewTarget,
+            previewShowOthers = previewShowOthers,
+            blockTarget = blockTarget,
+            enabled = enabled
+        )
+    }
+
+    private fun isPreviewTarget(blockTarget: String): Boolean {
+        return HudOverlayPreviewPolicy.isTargeted(
+            previewMode = previewMode,
+            previewTarget = previewTarget,
+            blockTarget = blockTarget
+        )
+    }
+
+    private fun isSharedAlertPreviewTarget(): Boolean {
+        return isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED) ||
+            isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_STRELKA)
+    }
+
+    private fun resolveActiveHudAlertSource(): OverlayPrefs.HudAlertSource {
+        return when {
+            isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_STRELKA) ->
+                OverlayPrefs.HudAlertSource.STRELKA
+            isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED) ->
+                OverlayPrefs.HudAlertSource.HUDSPEED
+            else -> hudAlertSource
+        }
+    }
+
     fun shouldRefreshForMapRouteTelemetry(): Boolean {
-        val target = previewTarget
-        val previewMap = previewMode && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_MAP ||
-                previewShowOthers
-            )
-        val previewLaneGuidance = previewMode && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE ||
-                previewShowOthers
-            )
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
+        val previewLaneGuidance = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE,
+            laneGuidanceEnabled
+        )
         return mapEnabled || laneGuidanceEnabled || previewMap || previewLaneGuidance
     }
 
     private fun buildRenderSignature(state: NavigationHudState): RenderSignature {
         val showPreview = previewMode
-        val target = previewTarget
-        val previewNav = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_NAV ||
-                previewShowOthers
-            )
-        val previewLaneGuidance = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE ||
-                previewShowOthers
-            )
-        val previewArrow = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_ARROW ||
-                previewShowOthers
-            )
-        val previewSpeed = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_SPEED ||
-                previewShowOthers
-            )
-        val previewSpeedometer = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER ||
-                previewShowOthers
-            )
-        val previewTurnSignals = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS ||
-                previewShowOthers
-            )
-        val previewHudSpeed = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED ||
-                previewShowOthers
-            )
-        val previewTrafficLight = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT ||
-                previewShowOthers
-            )
+        val activeHudAlertSource = resolveActiveHudAlertSource()
+        val previewNav = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_NAV, navEnabled)
+        val previewLaneGuidance = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE,
+            laneGuidanceEnabled
+        )
+        val previewArrow = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_ARROW, arrowEnabled)
+        val previewSpeed = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_SPEED, speedEnabled)
+        val previewSpeedometer = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER,
+            speedometerEnabled
+        )
+        val previewTurnSignals = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS,
+            turnSignalsEnabled
+        )
+        val previewHudSpeed = activeHudAlertSource == OverlayPrefs.HudAlertSource.HUDSPEED &&
+            shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED, hudSpeedEnabled)
+        val previewStrelka = activeHudAlertSource == OverlayPrefs.HudAlertSource.STRELKA &&
+            shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_STRELKA, hudSpeedEnabled)
+        val previewTrafficLight = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT,
+            trafficLightEnabled
+        )
         val hideNavigationByDistance = shouldHideManeuverByDistance(state, showPreview)
 
         val primaryText = if (previewNav) {
@@ -390,11 +408,7 @@ class HudOverlayController(private val context: Context) {
         val roadCameraBitmap = state.roadCameraIcon
         val bitmap = state.maneuverBitmap
         val laneGuidanceManeuver = MapRouteTelemetryStore.current().laneManeuver
-        val previewMap = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_MAP ||
-                previewShowOthers
-            )
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
         val includeTripStatusInSignature = previewMap || mapEnabled || mapHadVisibleContent
         val tripStatusDistanceText = if (!includeTripStatusInSignature) {
             ""
@@ -459,11 +473,7 @@ class HudOverlayController(private val context: Context) {
             maneuverHeight = bitmap?.height ?: 0,
             nativeTurnId = state.nativeTurnId,
             previewNav = previewNav,
-            previewLaneGuidance = showPreview && (
-                target == null ||
-                    target == OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE ||
-                    previewShowOthers
-                ),
+            previewLaneGuidance = previewLaneGuidance,
             previewArrow = previewArrow,
             previewSpeed = previewSpeed,
             previewSpeedometer = previewSpeedometer,
@@ -478,7 +488,14 @@ class HudOverlayController(private val context: Context) {
             hudSpeedCamFlag = state.hudSpeedCamFlag,
             hudSpeedLimit1 = state.hudSpeedLimit1,
             hudSpeedUpdatedAt = state.hudSpeedUpdatedAt,
+            strelkaActive = state.strelkaActive,
+            strelkaGenId = state.strelkaBitmap?.generationId ?: -1,
+            strelkaWidth = state.strelkaBitmap?.width ?: 0,
+            strelkaHeight = state.strelkaBitmap?.height ?: 0,
+            strelkaUpdatedAt = state.strelkaUpdatedAt,
+            hudAlertSource = activeHudAlertSource,
             previewHudSpeed = previewHudSpeed,
+            previewStrelka = previewStrelka,
             previewTrafficLight = previewTrafficLight,
             hideNavigationByDistance = hideNavigationByDistance,
             trafficLights = trafficLightSignatures
@@ -527,7 +544,14 @@ class HudOverlayController(private val context: Context) {
         val hudSpeedCamFlag: Int?,
         val hudSpeedLimit1: Int?,
         val hudSpeedUpdatedAt: Long,
+        val strelkaActive: Boolean,
+        val strelkaGenId: Int,
+        val strelkaWidth: Int,
+        val strelkaHeight: Int,
+        val strelkaUpdatedAt: Long,
+        val hudAlertSource: OverlayPrefs.HudAlertSource,
         val previewHudSpeed: Boolean,
+        val previewStrelka: Boolean,
         val previewTrafficLight: Boolean,
         val hideNavigationByDistance: Boolean,
         val trafficLights: List<TrafficLightSignature>
@@ -581,7 +605,9 @@ class HudOverlayController(private val context: Context) {
         laneGuidancePosition: PointF?,
         arrowPosition: PointF?,
         speedPosition: PointF?,
+        hudAlertSource: String?,
         hudSpeedPosition: PointF?,
+        strelkaPosition: PointF?,
         roadCameraPosition: PointF?,
         trafficLightPosition: PointF?,
         speedometerPosition: PointF?,
@@ -594,6 +620,7 @@ class HudOverlayController(private val context: Context) {
         arrowScale: Float?,
         speedScale: Float?,
         hudSpeedScale: Float?,
+        strelkaScale: Float?,
         roadCameraScale: Float?,
         trafficLightScale: Float?,
         speedometerScale: Float?,
@@ -606,6 +633,7 @@ class HudOverlayController(private val context: Context) {
         arrowAlpha: Float?,
         speedAlpha: Float?,
         hudSpeedAlpha: Float?,
+        strelkaAlpha: Float?,
         roadCameraAlpha: Float?,
         trafficLightAlpha: Float?,
         speedometerAlpha: Float?,
@@ -675,8 +703,15 @@ class HudOverlayController(private val context: Context) {
             if (speedPosition != null) {
                 speedPositionDp = speedPosition
             }
+            if (hudAlertSource != null) {
+                OverlayPrefs.HudAlertSource.entries.firstOrNull { it.storedValue == hudAlertSource }
+                    ?.let { this.hudAlertSource = it }
+            }
             if (hudSpeedPosition != null) {
                 hudSpeedPositionDp = hudSpeedPosition
+            }
+            if (strelkaPosition != null) {
+                strelkaPositionDp = strelkaPosition
             }
             if (roadCameraPosition != null) {
                 roadCameraPositionDp = roadCameraPosition
@@ -714,6 +749,9 @@ class HudOverlayController(private val context: Context) {
             }
             if (hudSpeedScale != null) {
                 this.hudSpeedScale = hudSpeedScale.coerceAtLeast(0f)
+            }
+            if (strelkaScale != null) {
+                this.strelkaScale = strelkaScale.coerceAtLeast(0f)
             }
             if (roadCameraScale != null) {
                 this.roadCameraScale = roadCameraScale.coerceAtLeast(0f)
@@ -755,6 +793,9 @@ class HudOverlayController(private val context: Context) {
             }
             if (hudSpeedAlpha != null) {
                 this.hudSpeedAlpha = hudSpeedAlpha.coerceIn(0f, 1f)
+            }
+            if (strelkaAlpha != null) {
+                this.strelkaAlpha = strelkaAlpha.coerceIn(0f, 1f)
             }
             if (roadCameraAlpha != null) {
                 this.roadCameraAlpha = roadCameraAlpha.coerceIn(0f, 1f)
@@ -1330,6 +1371,15 @@ class HudOverlayController(private val context: Context) {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             setTypeface(typeface, Typeface.BOLD)
         }
+        val strelkaImageViewLocal = ImageView(displayContext).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_START
+            visibility = View.GONE
+        }
 
         hudSpeedFullIconContainer.addView(hudSpeedFullIconView)
         hudSpeedFullIconContainer.addView(hudSpeedFullGpsBadgeView)
@@ -1350,6 +1400,7 @@ class HudOverlayController(private val context: Context) {
 
         hudSpeedContentView.addView(hudSpeedFullLayoutView)
         hudSpeedContentView.addView(hudSpeedCompactLayoutView)
+        hudSpeedContentView.addView(strelkaImageViewLocal)
 
         hudSpeedBlock.addView(hudSpeedOverspeedViewLocal)
         hudSpeedBlock.addView(hudSpeedContentView)
@@ -1534,6 +1585,7 @@ class HudOverlayController(private val context: Context) {
             hudSpeedCompactGpsBadge = hudSpeedCompactGpsBadgeView
             hudSpeedCompactDirection = hudSpeedCompactDirectionIconView
             hudSpeedCompactDistance = hudSpeedCompactDistanceTextView
+            strelkaImageView = strelkaImageViewLocal
             roadCameraContainer = roadCameraBlock
             roadCameraIconView = roadCameraIcon
             roadCameraDistanceView = roadCameraDistanceText
@@ -1590,6 +1642,7 @@ class HudOverlayController(private val context: Context) {
             hudSpeedCompactGpsBadge = null
             hudSpeedCompactDirection = null
             hudSpeedCompactDistance = null
+            strelkaImageView = null
             hudSpeedActiveLayout = null
             roadCameraContainer = null
             roadCameraIconView = null
@@ -1666,6 +1719,7 @@ class HudOverlayController(private val context: Context) {
         hudSpeedCompactGpsBadge = null
         hudSpeedCompactDirection = null
         hudSpeedCompactDistance = null
+        strelkaImageView = null
         hudSpeedActiveLayout = null
         roadCameraContainer = null
         roadCameraIconView = null
@@ -1776,76 +1830,50 @@ class HudOverlayController(private val context: Context) {
         val speedometer = speedometerView
         val mapContainer = mapContainerView
         val showPreview = previewMode
-        val target = previewTarget
-        val previewNav = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_NAV ||
-                previewShowOthers
-            )
-        val previewArrow = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_ARROW ||
-                previewShowOthers
-            )
-        val previewSpeed = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_SPEED ||
-                previewShowOthers
-            )
-        val previewSpeedometer = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER ||
-                previewShowOthers
-            )
-        val previewTurnSignals = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS ||
-                previewShowOthers
-            )
-        val previewHudSpeed = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED ||
-                previewShowOthers
-            )
-        val previewRoadCamera = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_ROAD_CAMERA ||
-                previewShowOthers
-            )
-        val previewTrafficLight = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT ||
-                previewShowOthers
-            )
-        val previewClock = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_CLOCK ||
-                previewShowOthers
-            )
-        val previewLaneGuidance = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE ||
-                previewShowOthers
-            )
-        val previewMap = showPreview && (
-            target == null ||
-                target == OverlayBroadcasts.PREVIEW_TARGET_MAP ||
-                previewShowOthers
-            )
-        val navAllowed = navEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_NAV)
+        val activeHudAlertSource = resolveActiveHudAlertSource()
+        val previewNav = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_NAV, navEnabled)
+        val previewArrow = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_ARROW, arrowEnabled)
+        val previewSpeed = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_SPEED, speedEnabled)
+        val previewSpeedometer = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER,
+            speedometerEnabled
+        )
+        val previewTurnSignals = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS,
+            turnSignalsEnabled
+        )
+        val previewHudSpeed = activeHudAlertSource == OverlayPrefs.HudAlertSource.HUDSPEED &&
+            shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED, hudSpeedEnabled)
+        val previewStrelka = activeHudAlertSource == OverlayPrefs.HudAlertSource.STRELKA &&
+            shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_STRELKA, hudSpeedEnabled)
+        val previewRoadCamera = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_ROAD_CAMERA,
+            roadCameraEnabled
+        )
+        val previewTrafficLight = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT,
+            trafficLightEnabled
+        )
+        val previewClock = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_CLOCK, clockEnabled)
+        val previewLaneGuidance = shouldPreviewBlock(
+            OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE,
+            laneGuidanceEnabled
+        )
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
+        val navAllowed = navEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_NAV)
         val laneGuidanceAllowed =
-            laneGuidanceEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE)
+            laneGuidanceEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE)
         val routeSnapshot = MapRouteTelemetryStore.current()
         val hasMapRoute = routeSnapshot.hasRoute
-        val mapAllowed = mapEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_MAP)
-        val arrowAllowed = arrowEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_ARROW)
-        val speedAllowed = speedEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_SPEED)
-        val speedometerAllowed = speedometerEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER)
-        val turnSignalsAllowed = turnSignalsEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS)
-        val hudSpeedAllowed = hudSpeedEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED)
-        val roadCameraAllowed = roadCameraEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_ROAD_CAMERA)
-        val trafficLightAllowed = trafficLightEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT)
-        val clockAllowed = clockEnabled || (showPreview && target == OverlayBroadcasts.PREVIEW_TARGET_CLOCK)
+        val mapAllowed = mapEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_MAP)
+        val arrowAllowed = arrowEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_ARROW)
+        val speedAllowed = speedEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_SPEED)
+        val speedometerAllowed = speedometerEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER)
+        val turnSignalsAllowed = turnSignalsEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS)
+        val hudSpeedAllowed = hudSpeedEnabled || isSharedAlertPreviewTarget()
+        val roadCameraAllowed = roadCameraEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_ROAD_CAMERA)
+        val trafficLightAllowed = trafficLightEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT)
+        val clockAllowed = clockEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_CLOCK)
 
         container?.visibility = View.VISIBLE
 
@@ -1891,7 +1919,8 @@ class HudOverlayController(private val context: Context) {
         } else {
             formatHudSpeedDistance(state.hudSpeedDistanceMeters)
         }
-        val hudSpeedGpsStatusEnabled = OverlayPrefs.hudSpeedGpsStatusEnabled(context)
+        val hudSpeedGpsStatusEnabled = activeHudAlertSource == OverlayPrefs.HudAlertSource.HUDSPEED &&
+            OverlayPrefs.hudSpeedGpsStatusEnabled(context)
         val hudSpeedHasGps = if (previewHudSpeed) false else state.hudSpeedHasGps
         val hudSpeedGpsStatusVisible = !previewHudSpeed &&
             hudSpeedGpsStatusEnabled &&
@@ -1930,6 +1959,11 @@ class HudOverlayController(private val context: Context) {
             PREVIEW_HUDSPEED_CAM_TYPE
         } else {
             state.hudSpeedCamType
+        }
+        val strelkaBitmap = if (previewStrelka) {
+            strelkaPreviewBitmap
+        } else {
+            state.strelkaBitmap?.takeUnless { it.isRecycled || it.width <= 0 || it.height <= 0 }
         }
         val roadCameraDistanceText = if (previewRoadCamera) {
             context.getString(R.string.preview_road_camera_distance)
@@ -1989,7 +2023,10 @@ class HudOverlayController(private val context: Context) {
         val hudSpeedHiddenByMap = shouldHideBlockWhenMapVisible(
             showPreview = showPreview,
             mapVisible = mapVisible,
-            hideWhenMapActive = OverlayPrefs.hudSpeedHideWhenMapActive(context)
+            hideWhenMapActive = when (activeHudAlertSource) {
+                OverlayPrefs.HudAlertSource.HUDSPEED -> OverlayPrefs.hudSpeedHideWhenMapActive(context)
+                OverlayPrefs.HudAlertSource.STRELKA -> OverlayPrefs.strelkaHideWhenMapActive(context)
+            }
         )
         val roadCameraHiddenByMap = shouldHideBlockWhenMapVisible(
             showPreview = showPreview,
@@ -2051,19 +2088,24 @@ class HudOverlayController(private val context: Context) {
             rightActive = turnSignalRight,
             fillTransparentBackground = turnSignalsTransparentFillVisible
         )
-        val hudSpeedLimitTextScale = PREVIEW_SPEED_LIMIT_TEXT_SCALE
-        updateHudSpeed(
-            hudSpeedCamType,
-            hudSpeedDirectionIcon,
-            hudSpeedDistanceText,
-            hudSpeedLimitText,
-            hudSpeedLimitEnabled,
-            hudSpeedLimitTextScale,
-            hudSpeedGpsStatusVisible,
-            hudSpeedHasGps,
-            hudSpeedTransparentFillVisible
-        )
-        updateHudSpeedOverspeed(hudSpeedLimitOverspeed)
+        if (activeHudAlertSource == OverlayPrefs.HudAlertSource.HUDSPEED) {
+            val hudSpeedLimitTextScale = PREVIEW_SPEED_LIMIT_TEXT_SCALE
+            updateHudSpeed(
+                hudSpeedCamType,
+                hudSpeedDirectionIcon,
+                hudSpeedDistanceText,
+                hudSpeedLimitText,
+                hudSpeedLimitEnabled,
+                hudSpeedLimitTextScale,
+                hudSpeedGpsStatusVisible,
+                hudSpeedHasGps,
+                hudSpeedTransparentFillVisible
+            )
+            updateHudSpeedOverspeed(hudSpeedLimitOverspeed)
+        } else {
+            updateStrelka(strelkaBitmap)
+            updateHudSpeedOverspeed(false)
+        }
         updateRoadCamera(state.roadCameraIcon, roadCameraDistanceText, roadCameraAllowed, previewRoadCamera)
         updateTrafficLights(trafficLights, trafficLightAllowed, previewTrafficLight)
         updateLaneGuidance(
@@ -2098,16 +2140,28 @@ class HudOverlayController(private val context: Context) {
             state.maneuverBitmap != null && arrowEligible && !hideNavigationByDistance && !arrowHiddenByMap
         }
         val speedVisible = if (showPreview) previewSpeed else state.speedLimit.isNotBlank() && !speedHiddenByMap
-        if (!showPreview && (!state.hudSpeedHasCamera || state.hudSpeedDistanceMeters == null)) {
+        if (
+            activeHudAlertSource == OverlayPrefs.HudAlertSource.HUDSPEED &&
+            !showPreview &&
+            (!state.hudSpeedHasCamera || state.hudSpeedDistanceMeters == null)
+        ) {
             cancelHudSpeedHide()
         }
         val hudSpeedVisible = if (showPreview) {
-            previewHudSpeed
+            previewHudSpeed || previewStrelka
         } else {
-            val hasCameraData = state.hudSpeedHasCamera &&
-                state.hudSpeedDistanceMeters != null &&
-                !shouldHideHudSpeed(state, showPreview)
-            (hasCameraData || hudSpeedGpsStatusVisible || hudSpeedTransparentFillVisible) && !hudSpeedHiddenByMap
+            when (activeHudAlertSource) {
+                OverlayPrefs.HudAlertSource.HUDSPEED -> {
+                    val hasCameraData = state.hudSpeedHasCamera &&
+                        state.hudSpeedDistanceMeters != null &&
+                        !shouldHideHudSpeed(state, showPreview)
+                    (hasCameraData || hudSpeedGpsStatusVisible || hudSpeedTransparentFillVisible) &&
+                        !hudSpeedHiddenByMap
+                }
+                OverlayPrefs.HudAlertSource.STRELKA -> {
+                    state.strelkaActive && strelkaBitmap != null && !hudSpeedHiddenByMap
+                }
+            }
         }
         val speedometerVisible = if (showPreview) previewSpeedometer else state.speedKmh != null && !speedometerHiddenByMap
         val turnSignalsVisible = if (showPreview) {
@@ -2261,6 +2315,16 @@ class HudOverlayController(private val context: Context) {
             container.postInvalidateOnAnimation()
             return
         }
+        val bitmap = maneuver?.bitmap?.takeUnless { it.isRecycled || it.width <= 0 || it.height <= 0 }
+        if (preview && bitmap != null) {
+            image.setImageBitmap(resolveLaneGuidanceHudBitmap(maneuver))
+            image.visibility = View.VISIBLE
+            placeholder.visibility = View.GONE
+            distance.text = formatLaneGuidanceDistance(maneuver.distanceMeters)
+            distance.visibility = if (showDistance) View.VISIBLE else View.GONE
+            container.background = null
+            return
+        }
         if (preview) {
             laneGuidanceHudBitmapSourceToken = Int.MIN_VALUE
             laneGuidanceHudBitmapSourceGenId = -1
@@ -2275,7 +2339,6 @@ class HudOverlayController(private val context: Context) {
             container.background = null
             return
         }
-        val bitmap = maneuver?.bitmap?.takeUnless { it.isRecycled || it.width <= 0 || it.height <= 0 }
         if (bitmap != null) {
             image.setImageBitmap(resolveLaneGuidanceHudBitmap(maneuver))
             image.visibility = View.VISIBLE
@@ -2299,28 +2362,7 @@ class HudOverlayController(private val context: Context) {
     }
 
     private fun formatLaneGuidanceDistance(distanceMeters: Int): String {
-        val roundedMeters = roundLaneGuidanceDistance(distanceMeters.coerceAtLeast(0))
-        return if (roundedMeters >= 1000) {
-            "1км"
-        } else {
-            "${roundedMeters}м"
-        }
-    }
-
-    private fun roundLaneGuidanceDistance(distanceMeters: Int): Int {
-        val cappedDistance = distanceMeters.coerceAtMost(1000)
-        val stepMeters = when {
-            cappedDistance > 600 -> 200
-            cappedDistance > 300 -> 100
-            cappedDistance > 50 -> 50
-            else -> 10
-        }
-        return ceilToStep(cappedDistance, stepMeters).coerceAtMost(1000)
-    }
-
-    private fun ceilToStep(value: Int, step: Int): Int {
-        if (value <= 0) return 0
-        return ((value + step - 1) / step) * step
+        return LaneGuidanceHudRenderHelper.formatDistance(distanceMeters)
     }
 
     private fun resolveLaneGuidanceHudBitmap(maneuver: MapLaneManeuver): Bitmap {
@@ -2338,150 +2380,13 @@ class HudOverlayController(private val context: Context) {
         ) {
             return laneGuidanceHudBitmap ?: source
         }
-        val prepared = prepareLaneGuidanceHudBitmap(source)
+        val prepared = LaneGuidanceHudRenderHelper.prepareBitmap(source)
         laneGuidanceHudBitmapSourceToken = token
         laneGuidanceHudBitmapSourceGenId = generationId
         laneGuidanceHudBitmapSourceWidth = width
         laneGuidanceHudBitmapSourceHeight = height
         laneGuidanceHudBitmap = prepared
         return prepared
-    }
-
-    private fun prepareLaneGuidanceHudBitmap(source: Bitmap): Bitmap {
-        val width = source.width
-        val height = source.height
-        if (width < 4 || height < 4) return source
-
-        val pixels = IntArray(width * height)
-        source.getPixels(pixels, 0, width, 0, 0, width, height)
-
-        val background = detectLaneGuidanceHudBackgroundColor(pixels, width, height) ?: return source
-        val bgRed = Color.red(background)
-        val bgGreen = Color.green(background)
-        val bgBlue = Color.blue(background)
-        val bgSpread = maxOf(bgRed, bgGreen, bgBlue) - minOf(bgRed, bgGreen, bgBlue)
-        val bgLuma = computeLuma(bgRed, bgGreen, bgBlue)
-
-        val maskedPixels = pixels.copyOf()
-        var removedPixels = 0
-        var left = width
-        var top = height
-        var right = -1
-        var bottom = -1
-        for (index in maskedPixels.indices) {
-            val color = maskedPixels[index]
-            val alpha = Color.alpha(color)
-            if (alpha <= 10) {
-                maskedPixels[index] = Color.TRANSPARENT
-                continue
-            }
-            if (shouldRemoveLaneGuidanceHudBackground(color, bgRed, bgGreen, bgBlue, bgSpread, bgLuma)) {
-                maskedPixels[index] = Color.TRANSPARENT
-                removedPixels += 1
-                continue
-            }
-            val x = index % width
-            val y = index / width
-            if (x < left) left = x
-            if (x > right) right = x
-            if (y < top) top = y
-            if (y > bottom) bottom = y
-        }
-        if (removedPixels < 12 || right < left || bottom < top) {
-            return source
-        }
-
-        left = (left - 1).coerceAtLeast(0)
-        top = (top - 1).coerceAtLeast(0)
-        right = (right + 1).coerceAtMost(width - 1)
-        bottom = (bottom + 1).coerceAtMost(height - 1)
-        val croppedWidth = right - left + 1
-        val croppedHeight = bottom - top + 1
-        if (croppedWidth <= 0 || croppedHeight <= 0) return source
-
-        val croppedPixels = IntArray(croppedWidth * croppedHeight)
-        for (row in 0 until croppedHeight) {
-            val srcOffset = (top + row) * width + left
-            val dstOffset = row * croppedWidth
-            System.arraycopy(maskedPixels, srcOffset, croppedPixels, dstOffset, croppedWidth)
-        }
-        return Bitmap.createBitmap(croppedPixels, croppedWidth, croppedHeight, Bitmap.Config.ARGB_8888)
-    }
-
-    private fun detectLaneGuidanceHudBackgroundColor(pixels: IntArray, width: Int, height: Int): Int? {
-        if (pixels.isEmpty() || width <= 0 || height <= 0) return null
-        val band = (minOf(width, height) * 0.06f).roundToInt().coerceIn(1, 8)
-        val counts = HashMap<Int, Int>()
-        val sumR = HashMap<Int, Int>()
-        val sumG = HashMap<Int, Int>()
-        val sumB = HashMap<Int, Int>()
-        var sampleCount = 0
-
-        fun sample(x: Int, y: Int) {
-            val color = pixels[y * width + x]
-            if (Color.alpha(color) < 180) return
-            val red = Color.red(color)
-            val green = Color.green(color)
-            val blue = Color.blue(color)
-            val bucket = ((red shr 4) shl 8) or ((green shr 4) shl 4) or (blue shr 4)
-            counts[bucket] = (counts[bucket] ?: 0) + 1
-            sumR[bucket] = (sumR[bucket] ?: 0) + red
-            sumG[bucket] = (sumG[bucket] ?: 0) + green
-            sumB[bucket] = (sumB[bucket] ?: 0) + blue
-            sampleCount += 1
-        }
-
-        for (y in 0 until band) {
-            for (x in 0 until width) sample(x, y)
-        }
-        for (y in (height - band).coerceAtLeast(0) until height) {
-            for (x in 0 until width) sample(x, y)
-        }
-        for (x in 0 until band) {
-            for (y in band until (height - band).coerceAtLeast(band)) sample(x, y)
-        }
-        for (x in (width - band).coerceAtLeast(0) until width) {
-            for (y in band until (height - band).coerceAtLeast(band)) sample(x, y)
-        }
-
-        val bestBucket = counts.maxByOrNull { it.value }?.key ?: return null
-        val bestCount = counts[bestBucket] ?: return null
-        if (bestCount < 10 || bestCount * 4 < sampleCount) return null
-
-        val red = (sumR[bestBucket] ?: return null) / bestCount
-        val green = (sumG[bestBucket] ?: return null) / bestCount
-        val blue = (sumB[bestBucket] ?: return null) / bestCount
-        val spread = maxOf(red, green, blue) - minOf(red, green, blue)
-        if (spread < 24) return null
-        return Color.argb(255, red, green, blue)
-    }
-
-    private fun shouldRemoveLaneGuidanceHudBackground(
-        color: Int,
-        bgRed: Int,
-        bgGreen: Int,
-        bgBlue: Int,
-        bgSpread: Int,
-        bgLuma: Int,
-    ): Boolean {
-        val red = Color.red(color)
-        val green = Color.green(color)
-        val blue = Color.blue(color)
-        val dr = red - bgRed
-        val dg = green - bgGreen
-        val db = blue - bgBlue
-        val distanceSq = dr * dr + dg * dg + db * db
-        if (distanceSq <= 44 * 44) return true
-
-        val spread = maxOf(red, green, blue) - minOf(red, green, blue)
-        val luma = computeLuma(red, green, blue)
-        return distanceSq <= 68 * 68 &&
-            spread >= (bgSpread - 28).coerceAtLeast(0) &&
-            luma <= bgLuma + 26
-    }
-
-    private fun computeLuma(red: Int, green: Int, blue: Int): Int {
-        return ((red * 2126) + (green * 7152) + (blue * 722)) / 10_000
     }
 
     private fun updateManeuver(bitmap: android.graphics.Bitmap?, preview: Boolean) {
@@ -2794,6 +2699,7 @@ class HudOverlayController(private val context: Context) {
         val gpsStatusMode = showGpsStatus
         val transparentFillMode = fillTransparentBackground
         val distanceVisible = distanceText.isNotBlank()
+        strelkaImageView?.visibility = View.GONE
         if (!distanceVisible && !gpsStatusMode && !transparentFillMode) {
             hudSpeedContainer?.visibility = View.GONE
             return
@@ -2927,6 +2833,23 @@ class HudOverlayController(private val context: Context) {
         if (rightColumn != null) {
             rightColumn.visibility = if (directionVisible) View.VISIBLE else View.GONE
         }
+        syncHudSpeedMeasuredSize()
+    }
+
+    private fun updateStrelka(bitmap: Bitmap?) {
+        val imageView = strelkaImageView ?: return
+        hudSpeedFullLayout?.visibility = View.GONE
+        hudSpeedCompactLayout?.visibility = View.GONE
+        hudSpeedActiveLayout = imageView
+        if (bitmap == null) {
+            imageView.setImageDrawable(null)
+            imageView.visibility = View.GONE
+            hudSpeedContainer?.visibility = View.GONE
+            return
+        }
+        imageView.setImageBitmap(bitmap)
+        imageView.visibility = View.VISIBLE
+        hudSpeedContainer?.visibility = View.VISIBLE
         syncHudSpeedMeasuredSize()
     }
 
@@ -3253,8 +3176,9 @@ class HudOverlayController(private val context: Context) {
         updateContainerLayout(metrics, containerWidthPx, containerHeightPx)
         val containerWidth = containerWidthPx.toFloat()
         val containerHeight = containerHeightPx.toFloat()
+        val activeHudAlertSource = resolveActiveHudAlertSource()
         navContainer?.let {
-            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_NAV) {
+            if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_NAV)) {
                 it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
             } else {
                 it.background = null
@@ -3279,7 +3203,24 @@ class HudOverlayController(private val context: Context) {
             positionView(it, speedPositionDp, speedScale, speedAlpha, metrics.density, containerWidth, containerHeight)
         }
         hudSpeedContainer?.let {
-            positionView(it, hudSpeedPositionDp, hudSpeedScale, hudSpeedAlpha, metrics.density, containerWidth, containerHeight)
+            if (isSharedAlertPreviewTarget()) {
+                it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
+            } else {
+                it.background = null
+            }
+            val position = when (activeHudAlertSource) {
+                OverlayPrefs.HudAlertSource.HUDSPEED -> hudSpeedPositionDp
+                OverlayPrefs.HudAlertSource.STRELKA -> strelkaPositionDp
+            }
+            val scale = when (activeHudAlertSource) {
+                OverlayPrefs.HudAlertSource.HUDSPEED -> hudSpeedScale
+                OverlayPrefs.HudAlertSource.STRELKA -> strelkaScale
+            }
+            val alpha = when (activeHudAlertSource) {
+                OverlayPrefs.HudAlertSource.HUDSPEED -> hudSpeedAlpha
+                OverlayPrefs.HudAlertSource.STRELKA -> strelkaAlpha
+            }
+            positionView(it, position, scale, alpha, metrics.density, containerWidth, containerHeight)
         }
         roadCameraContainer?.let {
             positionView(it, roadCameraPositionDp, roadCameraScale, roadCameraAlpha, metrics.density, containerWidth, containerHeight)
@@ -3288,7 +3229,7 @@ class HudOverlayController(private val context: Context) {
             positionView(it, trafficLightPositionDp, trafficLightScale, trafficLightAlpha, metrics.density, containerWidth, containerHeight)
         }
         speedometerView?.let {
-            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER) {
+            if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER)) {
                 it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
             } else {
                 it.background = null
@@ -3297,7 +3238,7 @@ class HudOverlayController(private val context: Context) {
         }
         turnSignalsContainer?.let {
             applyTurnSignalsSpacing(metrics.density)
-            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS) {
+            if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS)) {
                 it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
             } else {
                 it.background = null
@@ -3375,7 +3316,7 @@ class HudOverlayController(private val context: Context) {
     }
 
     private fun updateContainerOutlineAlpha(container: FrameLayout) {
-        if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_CONTAINER) {
+        if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_CONTAINER)) {
             if (container.background == null || container.background is ColorDrawable) {
                 container.background = ContextCompat.getDrawable(container.context, R.drawable.bg_hud_container_outline)
             }
@@ -3388,11 +3329,7 @@ class HudOverlayController(private val context: Context) {
     }
 
     private fun updateMapView(displayContext: Context, containerWidthPx: Int, containerHeightPx: Int) {
-        val previewMap = previewMode && (
-            previewTarget == null ||
-                previewTarget == OverlayBroadcasts.PREVIEW_TARGET_MAP ||
-                previewShowOthers
-            )
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
         val routeSnapshot = MapRouteTelemetryStore.current()
         val hasMapRoute = routeSnapshot.hasRoute
         val runtimeMapVisible = !previewMode && mapEnabled && hasMapRoute && !hideMapByManeuverActive
@@ -3413,10 +3350,14 @@ class HudOverlayController(private val context: Context) {
         val heightPx = (mapHeightDp * displayContext.resources.displayMetrics.density)
             .roundToInt()
             .coerceIn(1, containerHeightPx.coerceAtLeast(1))
-        mapContainer.layoutParams = (mapContainer.layoutParams as? FrameLayout.LayoutParams)?.apply {
-            width = widthPx
-            height = heightPx
-        } ?: FrameLayout.LayoutParams(widthPx, heightPx)
+        val mapContainerParams = (mapContainer.layoutParams as? FrameLayout.LayoutParams)
+            ?: FrameLayout.LayoutParams(widthPx, heightPx)
+        if (mapContainerParams.width != widthPx || mapContainerParams.height != heightPx) {
+            mapContainer.layoutParams = mapContainerParams.apply {
+                width = widthPx
+                height = heightPx
+            }
+        }
         positionView(
             mapContainer,
             mapPositionDp,
@@ -3438,7 +3379,7 @@ class HudOverlayController(private val context: Context) {
         mapContainer.visibility = View.VISIBLE
         mapContainer.background = null
         mapContainer.setBackgroundColor(Color.TRANSPARENT)
-        updateMapTripStatus(
+        val tripStatusReservedHeightPx = updateMapTripStatus(
             view = mapTripStatus,
             state = lastState,
             mapHeightPx = heightPx,
@@ -3470,6 +3411,7 @@ class HudOverlayController(private val context: Context) {
             placeholder.visibility = View.GONE
             ensureLocalMapController(displayContext, mapContent).apply {
                 attachTo(mapContent)
+                setTripStatusReservedHeightPx(tripStatusReservedHeightPx)
                 setVisible(true)
             }
         }
@@ -3531,7 +3473,7 @@ class HudOverlayController(private val context: Context) {
         state: NavigationHudState,
         mapHeightPx: Int,
         preview: Boolean,
-    ) {
+    ): Int {
         val bitmap = if (preview) {
             null
         } else {
@@ -3553,21 +3495,31 @@ class HudOverlayController(private val context: Context) {
             state.time.trim()
         }
         val hasContent = bitmap != null || distance.isNotBlank() || arrival.isNotBlank() || time.isNotBlank()
-        view.layoutParams = (view.layoutParams as? FrameLayout.LayoutParams)?.apply {
-            width = FrameLayout.LayoutParams.MATCH_PARENT
-            height = resolveMapTripStatusHeightPx(mapHeightPx, bitmap != null)
-            gravity = Gravity.BOTTOM
-        } ?: FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            resolveMapTripStatusHeightPx(mapHeightPx, bitmap != null),
-            Gravity.BOTTOM
-        )
-        view.updateContent(distance = distance, arrival = arrival, time = time, bitmap = bitmap)
-        view.visibility = if (MapRenderSettingsStore.current().tripStatusEnabled && (preview || hasContent)) {
-            View.VISIBLE
-        } else {
-            View.GONE
+        val targetHeight = resolveMapTripStatusHeightPx(mapHeightPx, bitmap != null)
+        val targetVisible = MapRenderSettingsStore.current().tripStatusEnabled && (preview || hasContent)
+        val params = (view.layoutParams as? FrameLayout.LayoutParams)
+            ?: FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                targetHeight,
+                Gravity.BOTTOM
+            )
+        if (
+            params.width != FrameLayout.LayoutParams.MATCH_PARENT ||
+            params.height != targetHeight ||
+            params.gravity != Gravity.BOTTOM
+        ) {
+            view.layoutParams = params.apply {
+                width = FrameLayout.LayoutParams.MATCH_PARENT
+                height = targetHeight
+                gravity = Gravity.BOTTOM
+            }
         }
+        view.updateContent(distance = distance, arrival = arrival, time = time, bitmap = bitmap)
+        val targetVisibility = if (targetVisible) View.VISIBLE else View.GONE
+        if (view.visibility != targetVisibility) {
+            view.visibility = targetVisibility
+        }
+        return if (targetVisible) targetHeight else 0
     }
 
     private fun ensureLocalMapController(displayContext: Context, mapContent: FrameLayout): HudMapController {
