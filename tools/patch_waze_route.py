@@ -255,82 +255,6 @@ ROUTE_METHOD = r'''
     :end
     return-void
 .end method
-
-.method public static publishCameras(Landroid/content/Context;Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;)V
-    .locals 7
-
-    if-eqz p0, :end
-    if-eqz p1, :end
-
-    invoke-virtual {p1}, Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;->getDescriptorsCount()I
-    move-result v0
-
-    const/4 v1, 0x0
-    :loop_start
-    if-ge v1, v0, :clear_camera
-
-    invoke-virtual {p1, v1}, Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;->getDescriptors(I)Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;
-    move-result-object v2
-    if-eqz v2, :loop_next
-
-    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;->getInfo()Lcom/waze/jni/protos/alerters/AlerterInfo;
-    move-result-object v3
-    if-eqz v3, :loop_next
-
-    invoke-virtual {v3}, Lcom/waze/jni/protos/alerters/AlerterInfo;->getTypeValue()I
-    move-result v4
-    const/16 v5, 0xa
-    if-eq v4, v5, :found_camera
-
-    :loop_next
-    add-int/lit8 v1, v1, 0x1
-    goto :loop_start
-
-    :found_camera
-    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;->getAlertId()Lcom/waze/jni/protos/alerters/AlerterId;
-    move-result-object v2
-    if-eqz v2, :loop_next
-
-    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/AlerterId;->getUuid()Ljava/lang/String;
-    move-result-object v2
-
-    invoke-virtual {v3}, Lcom/waze/jni/protos/alerters/AlerterInfo;->getDistanceString()Ljava/lang/String;
-    move-result-object v3
-
-    new-instance v5, Landroid/content/Intent;
-    const-string v6, "com.yandex.ROADCAMERA"
-    invoke-direct {v5, v6}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
-
-    const-string v6, "com.g992.anhud"
-    invoke-virtual {v5, v6}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
-
-    const-string v6, "camera_id"
-    invoke-virtual {v5, v6, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
-
-    const-string v6, "distance_text"
-    invoke-virtual {v5, v6, v3}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
-
-    invoke-virtual {p0, v5}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
-    goto :end
-
-    :clear_camera
-    new-instance v5, Landroid/content/Intent;
-    const-string v6, "com.yandex.ROADCAMERA"
-    invoke-direct {v5, v6}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
-
-    const-string v6, "com.g992.anhud"
-    invoke-virtual {v5, v6}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
-
-    const-string v6, "camera_id"
-    const-string v2, ""
-    invoke-virtual {v5, v6, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
-
-    invoke-virtual {p0, v5}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
-
-    :end
-    return-void
-.end method
-
 '''
 
 ROUTE_HOOK = '''.method onNavigationRouteChanged(Lcom/waze/jni/protos/navigate/NavigationRoute;)V
@@ -413,7 +337,16 @@ def patch(root: Path) -> None:
 
     return-void
 
-    :pswitch_data_0'''
+    :pswitch_data_0
+    .packed-switch 0x0
+        :pswitch_0
+        :pswitch_1
+        :pswitch_2
+        :pswitch_3
+        :pswitch_4
+        :pswitch_5
+        :pswitch_6
+    .end packed-switch'''
     dispatch_replacement = '''    :pswitch_6
     invoke-static {p0, p2, p3}, Lcom/waze/HudControl;->h6(Landroid/content/Context;II)V
 
@@ -431,7 +364,45 @@ def patch(root: Path) -> None:
 
     return-void
 
-    :pswitch_data_0'''
+    :pswitch_9
+    invoke-static {p0, p2}, Lcom/waze/HudControl;->h9(Landroid/content/Context;I)V
+    return-void
+
+    :pswitch_a
+    check-cast p4, Ljava/lang/String;
+    invoke-static {p0, p2, p4}, Lcom/waze/HudControl;->h10(Landroid/content/Context;ILjava/lang/String;)V
+    return-void
+
+    :pswitch_b
+    check-cast p4, Lcom/waze/jni/protos/navigate/DistanceUpdate;
+    invoke-static {p0, p4}, Lcom/waze/HudControl;->h11(Landroid/content/Context;Lcom/waze/jni/protos/navigate/DistanceUpdate;)V
+    return-void
+
+    :pswitch_c
+    check-cast p4, Ljava/lang/String;
+    invoke-static {p0, p4}, Lcom/waze/HudControl;->h12(Landroid/content/Context;Ljava/lang/String;)V
+    return-void
+
+    :pswitch_data_0
+    .packed-switch 0x0
+        :pswitch_0
+        :pswitch_1
+        :pswitch_2
+        :pswitch_3
+        :pswitch_4
+        :pswitch_5
+        :pswitch_6
+        :pswitch_7
+        :pswitch_8
+        :pswitch_9
+        :pswitch_a
+        :pswitch_b
+        :pswitch_c
+    .end packed-switch'''
+
+    if dispatch_anchor not in hud_text:
+        raise RuntimeError("Unsupported HudControl.smali: dispatch anchor was not found.")
+    patched_hud = hud_text.replace(dispatch_anchor, dispatch_replacement, 1)
 
     telemetry_anchor = '''    :cond_a
     :goto_2
@@ -445,9 +416,51 @@ def patch(root: Path) -> None:
     :try_start_0
     invoke-virtual {p0, v0}, Landroid/content/Context;->startService(Landroid/content/Intent;)Landroid/content/ComponentName;
 '''
-    if telemetry_anchor not in hud_text:
+    if telemetry_anchor not in patched_hud:
         raise RuntimeError("Unsupported HudControl.smali: telemetry anchor was not found.")
+    patched_hud = patched_hud.replace(telemetry_anchor, telemetry_replacement, 1)
+
+    patched_hud = patched_hud.replace(
+        '''.method private static h4(Landroid/content/Context;Lcom/waze/jni/protos/navigate/DistanceUpdate;)V
+    .locals 1
+
+    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getRawMeters()I
+''',
+        '''.method private static h4(Landroid/content/Context;Lcom/waze/jni/protos/navigate/DistanceUpdate;)V
+    .locals 2
+
+    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getValueString()Ljava/lang/String;
+    move-result-object v0
+    sput-object v0, Lcom/waze/HudControl;->sInstructionDistance:Ljava/lang/String;
+    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getUnitString()Ljava/lang/String;
+    move-result-object v1
+    sput-object v1, Lcom/waze/HudControl;->sInstructionDistanceUnit:Ljava/lang/String;
+
+    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getRawMeters()I
+''',
+        1
+    )
+    if 'sInstructionDistanceUnit' not in patched_hud:
+        raise RuntimeError("Unsupported HudControl.smali: instruction-distance anchor was not found.")
     
+    speed_limit_anchor = '''.method private static h6(Landroid/content/Context;I)V
+    .locals 3
+
+    new-instance v0, Landroid/content/Intent;
+'''
+    speed_limit_replacement = '''.method private static h6(Landroid/content/Context;II)V
+    .locals 3
+
+    sput p1, Lcom/waze/HudControl;->sSpeedLimit:I
+    sput p2, Lcom/waze/HudControl;->sCurrentSpeed:I
+    invoke-static {p0}, Lcom/waze/HudControl;->publishNavigation(Landroid/content/Context;)V
+
+    new-instance v0, Landroid/content/Intent;
+'''
+    if speed_limit_anchor not in patched_hud:
+        raise RuntimeError("Unsupported HudControl.smali: speed-limit anchor was not found.")
+    patched_hud = patched_hud.replace(speed_limit_anchor, speed_limit_replacement, 1)
+
     eta_seconds_anchor = '''.method onCurrentEtaSecondsChanged(I)V
     .locals 1
 '''
@@ -495,91 +508,6 @@ def patch(root: Path) -> None:
     const/4 v3, 0x0
     invoke-static {v0, v1, v2, v3, p1}, Lcom/waze/HudControl;->dispatch(Landroid/content/Context;IIILjava/lang/Object;)V
 '''
-    patched_hud = (
-        hud_text
-            .replace(state_anchor, STATE_HOOK + "\n.method private static h1", 1)
-            .replace(field_anchor, telemetry_fields, 1)
-            .replace(dispatch_anchor, dispatch_replacement, 1)
-            .replace(telemetry_anchor, telemetry_replacement, 1)
-    )
-
-    telemetry_dispatch_anchor = '''    :pswitch_8
-    check-cast p4, Lcom/waze/jni/protos/navigate/NavigationRoute;
-    invoke-static {p0, p4}, Lcom/waze/HudControl;->publishSelectedRoute(Landroid/content/Context;Lcom/waze/jni/protos/navigate/NavigationRoute;)V
-
-    return-void
-
-    :pswitch_data_0'''
-    telemetry_dispatch_replacement = '''    :pswitch_8
-    check-cast p4, Lcom/waze/jni/protos/navigate/NavigationRoute;
-    invoke-static {p0, p4}, Lcom/waze/HudControl;->publishSelectedRoute(Landroid/content/Context;Lcom/waze/jni/protos/navigate/NavigationRoute;)V
-
-    return-void
-
-    :pswitch_9
-    invoke-static {p0, p2}, Lcom/waze/HudControl;->h9(Landroid/content/Context;I)V
-    return-void
-
-    :pswitch_a
-    check-cast p4, Ljava/lang/String;
-    invoke-static {p0, p2, p4}, Lcom/waze/HudControl;->h10(Landroid/content/Context;ILjava/lang/String;)V
-    return-void
-
-    :pswitch_b
-    check-cast p4, Lcom/waze/jni/protos/navigate/DistanceUpdate;
-    invoke-static {p0, p4}, Lcom/waze/HudControl;->h11(Landroid/content/Context;Lcom/waze/jni/protos/navigate/DistanceUpdate;)V
-    return-void
-
-    :pswitch_c
-    check-cast p4, Ljava/lang/String;
-    invoke-static {p0, p4}, Lcom/waze/HudControl;->h12(Landroid/content/Context;Ljava/lang/String;)V
-    return-void
-
-    :pswitch_data_0'''
-
-    if telemetry_dispatch_anchor not in patched_hud:
-        raise RuntimeError("Unsupported HudControl.smali: telemetry dispatch anchor was not found.")
-    patched_hud = patched_hud.replace(telemetry_dispatch_anchor, telemetry_dispatch_replacement, 1)
-    patched_hud = patched_hud.replace(
-        '''.method private static h4(Landroid/content/Context;Lcom/waze/jni/protos/navigate/DistanceUpdate;)V
-    .locals 1
-
-    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getRawMeters()I
-''',
-        '''.method private static h4(Landroid/content/Context;Lcom/waze/jni/protos/navigate/DistanceUpdate;)V
-    .locals 2
-
-    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getValueString()Ljava/lang/String;
-    move-result-object v0
-    sput-object v0, Lcom/waze/HudControl;->sInstructionDistance:Ljava/lang/String;
-    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getUnitString()Ljava/lang/String;
-    move-result-object v1
-    sput-object v1, Lcom/waze/HudControl;->sInstructionDistanceUnit:Ljava/lang/String;
-
-    invoke-virtual {p1}, Lcom/waze/jni/protos/navigate/DistanceUpdate;->getRawMeters()I
-''',
-        1
-    )
-    if 'sInstructionDistanceUnit' not in patched_hud:
-        raise RuntimeError("Unsupported HudControl.smali: instruction-distance anchor was not found.")
-    
-    speed_limit_anchor = '''.method private static h6(Landroid/content/Context;I)V
-    .locals 3
-
-    new-instance v0, Landroid/content/Intent;
-'''
-    speed_limit_replacement = '''.method private static h6(Landroid/content/Context;II)V
-    .locals 3
-
-    sput p1, Lcom/waze/HudControl;->sSpeedLimit:I
-    sput p2, Lcom/waze/HudControl;->sCurrentSpeed:I
-    invoke-static {p0}, Lcom/waze/HudControl;->publishNavigation(Landroid/content/Context;)V
-
-    new-instance v0, Landroid/content/Intent;
-'''
-    if speed_limit_anchor not in patched_hud:
-        raise RuntimeError("Unsupported HudControl.smali: speed-limit anchor was not found.")
-    patched_hud = patched_hud.replace(speed_limit_anchor, speed_limit_replacement, 1)
 
     canvas_speed_anchor = '''    sget-object v0, Lcom/waze/mobile/WazeMobileApplication;->mContext:Landroid/content/Context;
 
@@ -624,6 +552,7 @@ def patch(root: Path) -> None:
     .locals 2
 
     .line 1
+    # ANHUD_WAZE_ROUTE_PATCH
     sget-object v0, Lcom/waze/mobile/WazeMobileApplication;->mContext:Landroid/content/Context;
     const/4 v1, 0x6
     invoke-static {v0, v1, p3, p1, v0}, Lcom/waze/HudControl;->dispatch(Landroid/content/Context;IIILjava/lang/Object;)V
@@ -655,6 +584,12 @@ def patch(root: Path) -> None:
         alerter.write_text(patched_alerter)
     else:
         print("Warning: Unsupported AlerterNativeManager.smali; updateAlertersRepository not found.")
+
+    patched_hud = (
+        patched_hud
+            .replace(state_anchor, STATE_HOOK + "\n.method private static h1", 1)
+            .replace(field_anchor, telemetry_fields, 1)
+    )
 
     hud.write_text(patched_hud + ROUTE_METHOD)
     nav.write_text(
