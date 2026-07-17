@@ -3324,8 +3324,13 @@ class HudOverlayController(private val context: Context) {
     private fun applyInfoMirrorMode(container: FrameLayout, containerWidthPx: Int, containerHeightPx: Int) {
         container.pivotX = containerWidthPx / 2f
         container.pivotY = containerHeightPx / 2f
-        container.scaleX = 1f
-        container.scaleY = if (infoMirrorStarsheep7Enabled) -1f else 1f
+        if (infoMirrorStarsheep7Enabled) {
+            container.scaleX = -1f
+            container.scaleY = -1f
+        } else {
+            container.scaleX = 1f
+            container.scaleY = 1f
+        }
     }
 
     private fun updateContainerOutlineAlpha(container: FrameLayout) {
