@@ -394,8 +394,6 @@ class HudStatusReceiver : BroadcastReceiver() {
     }
 
     private fun parsePresetNumber(intent: Intent): Int? {
-            .putExtra(OverlayBroadcasts.EXTRA_BATTERY_ENABLED, OverlayPrefs.batteryEnabled(context))
-            .putExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED, OverlayPrefs.powerEnabled(context))
         val valueByKnownKey = PRESET_NUMBER_KEYS.firstNotNullOfOrNull { key ->
             parseIntExtra(intent, key)
         }

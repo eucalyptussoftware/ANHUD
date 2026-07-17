@@ -661,6 +661,13 @@ object OverlayPrefs {
             migrateLegacyTurnSignalsIconStyle(stored)
         }
         if (!migrated || resolved != stored) {
+            preferences.edit()
+                .putInt(KEY_TURN_SIGNALS_ICON_STYLE, resolved)
+                .putBoolean(KEY_TURN_SIGNALS_ICON_STYLE_MIGRATED, true)
+                .apply()
+        }
+        return resolved
+    }
     fun batteryPositionDp(context: Context): PointF {
         return PointF(
             prefs(context).getFloat(KEY_BATTERY_X_DP, 0f),
@@ -687,14 +694,6 @@ object OverlayPrefs {
             .putFloat(KEY_POWER_X_DP, xDp)
             .putFloat(KEY_POWER_Y_DP, yDp)
             .apply()
-    }
-
-            preferences.edit()
-                .putInt(KEY_TURN_SIGNALS_ICON_STYLE, resolved)
-                .putBoolean(KEY_TURN_SIGNALS_ICON_STYLE_MIGRATED, true)
-                .apply()
-        }
-        return resolved
     }
 
     fun setTurnSignalsIconStyle(context: Context, styleId: Int) {
@@ -891,6 +890,19 @@ object OverlayPrefs {
     }
 
     fun setMapAlpha(context: Context, alpha: Float) {
+        prefs(context).edit()
+            .putFloat(KEY_MAP_ALPHA, alpha)
+            .apply()
+    }
+
+
+    fun containerSizeDp(context: Context): PointF {
+        val prefs = prefs(context)
+        val defaultSize = defaultContainerSizeDp(context)
+        val width = prefs.getFloat(KEY_CONTAINER_WIDTH_DP, defaultSize)
+        val height = prefs.getFloat(KEY_CONTAINER_HEIGHT_DP, defaultSize)
+        return PointF(width, height)
+    }
     fun batteryScale(context: Context): Float {
         return prefs(context).getFloat(KEY_BATTERY_SCALE, 1f)
     }
@@ -905,19 +917,6 @@ object OverlayPrefs {
 
     fun setPowerScale(context: Context, scale: Float) {
         prefs(context).edit().putFloat(KEY_POWER_SCALE, scale).apply()
-    }
-
-        prefs(context).edit()
-            .putFloat(KEY_MAP_ALPHA, alpha)
-            .apply()
-    }
-
-    fun containerSizeDp(context: Context): PointF {
-        val prefs = prefs(context)
-        val defaultSize = defaultContainerSizeDp(context)
-        val width = prefs.getFloat(KEY_CONTAINER_WIDTH_DP, defaultSize)
-        val height = prefs.getFloat(KEY_CONTAINER_HEIGHT_DP, defaultSize)
-        return PointF(width, height)
     }
 
     fun setContainerSizeDp(context: Context, widthDp: Float, heightDp: Float) {
@@ -1070,6 +1069,13 @@ object OverlayPrefs {
     fun setHudSpeedHideWhenMapActive(context: Context, enabled: Boolean) {
         prefs(context).edit()
             .putBoolean(KEY_HUDSPEED_HIDE_WHEN_MAP_ACTIVE, enabled)
+            .apply()
+    }
+
+
+    fun strelkaHideWhenMapActive(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_STRELKA_HIDE_WHEN_MAP_ACTIVE, false)
+    }
     fun batteryAlpha(context: Context): Float {
         return prefs(context).getFloat(KEY_BATTERY_ALPHA, 1f)
     }
@@ -1084,13 +1090,6 @@ object OverlayPrefs {
 
     fun setPowerAlpha(context: Context, alpha: Float) {
         prefs(context).edit().putFloat(KEY_POWER_ALPHA, alpha).apply()
-    }
-
-            .apply()
-    }
-
-    fun strelkaHideWhenMapActive(context: Context): Boolean {
-        return prefs(context).getBoolean(KEY_STRELKA_HIDE_WHEN_MAP_ACTIVE, false)
     }
 
     fun setStrelkaHideWhenMapActive(context: Context, enabled: Boolean) {
@@ -1256,6 +1255,16 @@ object OverlayPrefs {
         return prefs(context).getBoolean(KEY_TURN_SIGNALS_HIDE_WHEN_MAP_ACTIVE, false)
     }
 
+    fun setTurnSignalsHideWhenMapActive(context: Context, enabled: Boolean) {
+        prefs(context).edit()
+            .putBoolean(KEY_TURN_SIGNALS_HIDE_WHEN_MAP_ACTIVE, enabled)
+            .apply()
+    }
+
+
+    fun clockEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_CLOCK_ENABLED, true)
+    }
     fun batteryEnabled(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_BATTERY_ENABLED, true)
     }
@@ -1270,16 +1279,6 @@ object OverlayPrefs {
 
     fun setPowerEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_POWER_ENABLED, enabled).apply()
-    }
-
-    fun setTurnSignalsHideWhenMapActive(context: Context, enabled: Boolean) {
-        prefs(context).edit()
-            .putBoolean(KEY_TURN_SIGNALS_HIDE_WHEN_MAP_ACTIVE, enabled)
-            .apply()
-    }
-
-    fun clockEnabled(context: Context): Boolean {
-        return prefs(context).getBoolean(KEY_CLOCK_ENABLED, true)
     }
 
     fun setClockEnabled(context: Context, enabled: Boolean) {

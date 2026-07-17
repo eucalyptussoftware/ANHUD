@@ -132,6 +132,10 @@ class HudOverlayController(private val context: Context) {
     private var turnSignalLeftView: ImageView? = null
     private var turnSignalRightView: ImageView? = null
     private var clockView: TextView? = null
+    private var batteryContainer: LinearLayout? = null
+    private var batteryView: TextView? = null
+    private var powerContainer: LinearLayout? = null
+    private var powerView: TextView? = null
     private var mapContainerView: FrameLayout? = null
     private var mapContentView: FrameLayout? = null
     private var mapTripStatusView: MapTripStatusView? = null
@@ -194,6 +198,12 @@ class HudOverlayController(private val context: Context) {
     private var speedometerAlpha: Float = OverlayPrefs.speedometerAlpha(context)
     private var turnSignalsAlpha: Float = OverlayPrefs.turnSignalsAlpha(context)
     private var clockAlpha: Float = OverlayPrefs.clockAlpha(context)
+    private var batteryPositionDp: PointF = OverlayPrefs.batteryPositionDp(context)
+    private var powerPositionDp: PointF = OverlayPrefs.powerPositionDp(context)
+    private var batteryScale: Float = OverlayPrefs.batteryScale(context)
+    private var powerScale: Float = OverlayPrefs.powerScale(context)
+    private var batteryAlpha: Float = OverlayPrefs.batteryAlpha(context)
+    private var powerAlpha: Float = OverlayPrefs.powerAlpha(context)
     private var containerAlpha: Float = OverlayPrefs.containerAlpha(context)
     private var mapAlpha: Float = OverlayPrefs.mapAlpha(context)
     private var navEnabled: Boolean = OverlayPrefs.navEnabled(context)
@@ -214,6 +224,8 @@ class HudOverlayController(private val context: Context) {
     private var speedometerShowUnitText: Boolean = OverlayPrefs.speedometerShowUnitText(context)
     private var turnSignalsEnabled: Boolean = OverlayPrefs.turnSignalsEnabled(context)
     private var clockEnabled: Boolean = OverlayPrefs.clockEnabled(context)
+    private var batteryEnabled: Boolean = OverlayPrefs.batteryEnabled(context)
+    private var powerEnabled: Boolean = OverlayPrefs.powerEnabled(context)
     private var mapEnabled: Boolean = OverlayPrefs.mapEnabled(context)
     private var infoMirrorStarsheep7Enabled: Boolean = OverlayPrefs.infoMirrorStarsheep7Enabled(context)
     private var previewMode: Boolean = false
@@ -1495,6 +1507,48 @@ class HudOverlayController(private val context: Context) {
             setTypeface(typeface, Typeface.BOLD)
         }
 
+        val batteryBlock = LinearLayout(displayContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+            visibility = View.GONE
+        }
+        val batteryIcon = ImageView(displayContext).apply {
+            layoutParams = LinearLayout.LayoutParams((24f * metrics.density).roundToInt(), (24f * metrics.density).roundToInt()).apply { marginEnd = (4f * metrics.density).roundToInt() }
+            setImageResource(R.drawable.ic_battery)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val batteryText = TextView(displayContext).apply {
+            includeFontPadding = false
+            setPadding(0, 0, 0, 0)
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        batteryBlock.addView(batteryIcon)
+        batteryBlock.addView(batteryText)
+
+        val powerBlock = LinearLayout(displayContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+            visibility = View.GONE
+        }
+        val powerIcon = ImageView(displayContext).apply {
+            layoutParams = LinearLayout.LayoutParams((24f * metrics.density).roundToInt(), (24f * metrics.density).roundToInt()).apply { marginEnd = (4f * metrics.density).roundToInt() }
+            setImageResource(R.drawable.ic_voltage)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val powerText = TextView(displayContext).apply {
+            includeFontPadding = false
+            setPadding(0, 0, 0, 0)
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        powerBlock.addView(powerIcon)
+        powerBlock.addView(powerText)
+
         val mapBlock = FrameLayout(displayContext).apply {
             layoutParams = FrameLayout.LayoutParams(1, 1)
             clipChildren = true
@@ -1566,6 +1620,8 @@ class HudOverlayController(private val context: Context) {
         root.addView(speedometerText)
         root.addView(turnSignalsBlock)
         root.addView(clockText)
+        root.addView(batteryBlock)
+        root.addView(powerBlock)
 
         val layoutParams = WindowManager.LayoutParams(
             containerWidthPx,
@@ -1627,6 +1683,10 @@ class HudOverlayController(private val context: Context) {
             turnSignalLeftView = turnSignalLeft
             turnSignalRightView = turnSignalRight
             clockView = clockText
+            batteryContainer = batteryBlock
+            batteryView = batteryText
+            powerContainer = powerBlock
+            powerView = powerText
             mapContainerView = mapBlock
             mapContentView = mapContent
             mapTripStatusView = mapTripStatus
@@ -1685,6 +1745,10 @@ class HudOverlayController(private val context: Context) {
             turnSignalLeftView = null
             turnSignalRightView = null
             clockView = null
+        batteryContainer = null
+        batteryView = null
+        powerContainer = null
+        powerView = null
             mapContainerView = null
             mapContentView = null
             mapTripStatusView = null
@@ -1762,6 +1826,10 @@ class HudOverlayController(private val context: Context) {
         turnSignalLeftView = null
         turnSignalRightView = null
         clockView = null
+        batteryContainer = null
+        batteryView = null
+        powerContainer = null
+        powerView = null
         mapContainerView = null
         mapContentView = null
         mapTripStatusView = null

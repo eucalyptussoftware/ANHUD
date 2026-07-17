@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">ANHUD</string>
+    <string name="battery_soc_format">%1$d%%</string>
+    <string name="battery_soc_format_placeholder">--%%</string>
+    <string name="engine_power_format">%1$s кВт</string>
     <string name="logs_title">Логи</string>
     <string name="logs_button">Логи</string>
     <string name="logs_button_content_desc">Открыть логи</string>
