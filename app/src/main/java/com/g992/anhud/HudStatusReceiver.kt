@@ -31,6 +31,8 @@ class HudStatusReceiver : BroadcastReceiver() {
         val speedometerEnabled = parseBooleanExtra(intent, EXTRA_SPEEDOMETER_ENABLED)
         val turnSignalsEnabled = parseBooleanExtra(intent, EXTRA_TURN_SIGNALS_ENABLED)
         val clockEnabled = parseBooleanExtra(intent, EXTRA_CLOCK_ENABLED)
+        val batteryEnabled = parseBooleanExtra(intent, EXTRA_BATTERY_ENABLED)
+        val powerEnabled = parseBooleanExtra(intent, EXTRA_POWER_ENABLED)
         val mapEnabled = parseBooleanExtra(intent, EXTRA_MAP_ENABLED)
         val hudAlertSource = parseHudAlertSource(intent, EXTRA_HUD_ALERT_SOURCE)
 
@@ -91,6 +93,12 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (turnSignalsEnabled != null) {
             OverlayPrefs.setTurnSignalsEnabled(context, turnSignalsEnabled)
         }
+        if (batteryEnabled != null) {
+            OverlayPrefs.setBatteryEnabled(context, batteryEnabled)
+        }
+        if (powerEnabled != null) {
+            OverlayPrefs.setPowerEnabled(context, powerEnabled)
+        }
         if (clockEnabled != null) {
             OverlayPrefs.setClockEnabled(context, clockEnabled)
         }
@@ -114,6 +122,8 @@ class HudStatusReceiver : BroadcastReceiver() {
             speedometerEnabled != null ||
             turnSignalsEnabled != null ||
             clockEnabled != null ||
+            batteryEnabled != null ||
+            powerEnabled != null ||
             mapEnabled != null ||
             hudAlertSource != null
         if (!shouldBroadcast) {
@@ -134,6 +144,8 @@ class HudStatusReceiver : BroadcastReceiver() {
             speedometerEnabled,
             turnSignalsEnabled,
             clockEnabled,
+            batteryEnabled,
+            powerEnabled,
             mapEnabled,
             hudAlertSource
         )
@@ -191,6 +203,8 @@ class HudStatusReceiver : BroadcastReceiver() {
         speedLimitAlertThreshold: Int?,
         speedometerEnabled: Boolean?,
         turnSignalsEnabled: Boolean?,
+        batteryEnabled: Boolean?,
+        powerEnabled: Boolean?,
         clockEnabled: Boolean?,
         mapEnabled: Boolean?,
         hudAlertSource: OverlayPrefs.HudAlertSource?
@@ -238,6 +252,12 @@ class HudStatusReceiver : BroadcastReceiver() {
         }
         if (hudAlertSource != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_HUD_ALERT_SOURCE, hudAlertSource.storedValue)
+        }
+        if (batteryEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_BATTERY_ENABLED, batteryEnabled)
+        }
+        if (powerEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED, powerEnabled)
         }
         updateIntent.putExtra(
             OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
@@ -313,6 +333,10 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ALPHA, OverlayPrefs.hudSpeedAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_STRELKA_ALPHA, OverlayPrefs.strelkaAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ALPHA, OverlayPrefs.roadCameraAlpha(context))
+            .putExtra(OverlayBroadcasts.EXTRA_BATTERY_X_DP, OverlayPrefs.batteryPositionDp(context).x)
+            .putExtra(OverlayBroadcasts.EXTRA_BATTERY_Y_DP, OverlayPrefs.batteryPositionDp(context).y)
+            .putExtra(OverlayBroadcasts.EXTRA_POWER_X_DP, OverlayPrefs.powerPositionDp(context).x)
+            .putExtra(OverlayBroadcasts.EXTRA_POWER_Y_DP, OverlayPrefs.powerPositionDp(context).y)
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_ALPHA, OverlayPrefs.trafficLightAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ALPHA, OverlayPrefs.speedometerAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_ALPHA, OverlayPrefs.turnSignalsAlpha(context))
@@ -338,6 +362,8 @@ class HudStatusReceiver : BroadcastReceiver() {
                 OverlayBroadcasts.EXTRA_SPEED_LIMIT_ALERT_ENABLED,
                 OverlayPrefs.speedLimitAlertEnabled(context)
             )
+            .putExtra(OverlayBroadcasts.EXTRA_BATTERY_SCALE, OverlayPrefs.batteryScale(context))
+            .putExtra(OverlayBroadcasts.EXTRA_POWER_SCALE, OverlayPrefs.powerScale(context))
             .putExtra(
                 OverlayBroadcasts.EXTRA_SPEED_LIMIT_ALERT_THRESHOLD,
                 OverlayPrefs.speedLimitAlertThreshold(context)
@@ -352,6 +378,8 @@ class HudStatusReceiver : BroadcastReceiver() {
                 OverlayPrefs.turnSignalsEnabled(context)
             )
             .putExtra(OverlayBroadcasts.EXTRA_CLOCK_ENABLED, OverlayPrefs.clockEnabled(context))
+            .putExtra(OverlayBroadcasts.EXTRA_BATTERY_ALPHA, OverlayPrefs.batteryAlpha(context))
+            .putExtra(OverlayBroadcasts.EXTRA_POWER_ALPHA, OverlayPrefs.powerAlpha(context))
             .putExtra(
                 OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_MAX_ACTIVE,
                 OverlayPrefs.trafficLightMaxActive(context)
@@ -366,6 +394,8 @@ class HudStatusReceiver : BroadcastReceiver() {
     }
 
     private fun parsePresetNumber(intent: Intent): Int? {
+            .putExtra(OverlayBroadcasts.EXTRA_BATTERY_ENABLED, OverlayPrefs.batteryEnabled(context))
+            .putExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED, OverlayPrefs.powerEnabled(context))
         val valueByKnownKey = PRESET_NUMBER_KEYS.firstNotNullOfOrNull { key ->
             parseIntExtra(intent, key)
         }
@@ -467,6 +497,8 @@ class HudStatusReceiver : BroadcastReceiver() {
         const val EXTRA_SPEED_LIMIT_ALERT_THRESHOLD = "SPEED_ALERT_THRESHOLD"
         const val EXTRA_SPEEDOMETER_ENABLED = "SPEEDOMETER"
         const val EXTRA_TURN_SIGNALS_ENABLED = "TURN_SIGNALS"
+        const val EXTRA_BATTERY_ENABLED = "BATTERY"
+        const val EXTRA_POWER_ENABLED = "POWER"
         const val EXTRA_CLOCK_ENABLED = "CLOCK"
         const val EXTRA_MAP_ENABLED = "MAP"
         const val EXTRA_HUD_ALERT_SOURCE = "HUD_ALERT_SOURCE"

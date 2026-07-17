@@ -180,6 +180,16 @@ object OverlayPrefs {
     private const val KEY_HIDE_TURN_DYNAMIC_HIDE_MAP_BLOCK = "hide_turn_dynamic_hide_map_block"
     private const val KEY_GUIDE_SHOWN = "guide_shown"
     private const val KEY_NAV_WIDTH_DP = "overlay_nav_width_dp"
+    private const val KEY_BATTERY_X_DP = "overlay_battery_x_dp"
+    private const val KEY_BATTERY_Y_DP = "overlay_battery_y_dp"
+    private const val KEY_BATTERY_SCALE = "overlay_battery_scale"
+    private const val KEY_BATTERY_ALPHA = "overlay_battery_alpha"
+    private const val KEY_BATTERY_ENABLED = "overlay_battery_enabled"
+    private const val KEY_POWER_X_DP = "overlay_power_x_dp"
+    private const val KEY_POWER_Y_DP = "overlay_power_y_dp"
+    private const val KEY_POWER_SCALE = "overlay_power_scale"
+    private const val KEY_POWER_ALPHA = "overlay_power_alpha"
+    private const val KEY_POWER_ENABLED = "overlay_power_enabled"
 
     const val ICON_SIZE_DP = 48f
     const val TURN_SIGNALS_ICON_SIZE_DP = 24f
@@ -651,6 +661,34 @@ object OverlayPrefs {
             migrateLegacyTurnSignalsIconStyle(stored)
         }
         if (!migrated || resolved != stored) {
+    fun batteryPositionDp(context: Context): PointF {
+        return PointF(
+            prefs(context).getFloat(KEY_BATTERY_X_DP, 0f),
+            prefs(context).getFloat(KEY_BATTERY_Y_DP, 216f)
+        )
+    }
+
+    fun setBatteryPositionDp(context: Context, xDp: Float, yDp: Float) {
+        prefs(context).edit()
+            .putFloat(KEY_BATTERY_X_DP, xDp)
+            .putFloat(KEY_BATTERY_Y_DP, yDp)
+            .apply()
+    }
+
+    fun powerPositionDp(context: Context): PointF {
+        return PointF(
+            prefs(context).getFloat(KEY_POWER_X_DP, 0f),
+            prefs(context).getFloat(KEY_POWER_Y_DP, 240f)
+        )
+    }
+
+    fun setPowerPositionDp(context: Context, xDp: Float, yDp: Float) {
+        prefs(context).edit()
+            .putFloat(KEY_POWER_X_DP, xDp)
+            .putFloat(KEY_POWER_Y_DP, yDp)
+            .apply()
+    }
+
             preferences.edit()
                 .putInt(KEY_TURN_SIGNALS_ICON_STYLE, resolved)
                 .putBoolean(KEY_TURN_SIGNALS_ICON_STYLE_MIGRATED, true)
@@ -853,6 +891,22 @@ object OverlayPrefs {
     }
 
     fun setMapAlpha(context: Context, alpha: Float) {
+    fun batteryScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_BATTERY_SCALE, 1f)
+    }
+
+    fun setBatteryScale(context: Context, scale: Float) {
+        prefs(context).edit().putFloat(KEY_BATTERY_SCALE, scale).apply()
+    }
+
+    fun powerScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_POWER_SCALE, 1f)
+    }
+
+    fun setPowerScale(context: Context, scale: Float) {
+        prefs(context).edit().putFloat(KEY_POWER_SCALE, scale).apply()
+    }
+
         prefs(context).edit()
             .putFloat(KEY_MAP_ALPHA, alpha)
             .apply()
@@ -1016,6 +1070,22 @@ object OverlayPrefs {
     fun setHudSpeedHideWhenMapActive(context: Context, enabled: Boolean) {
         prefs(context).edit()
             .putBoolean(KEY_HUDSPEED_HIDE_WHEN_MAP_ACTIVE, enabled)
+    fun batteryAlpha(context: Context): Float {
+        return prefs(context).getFloat(KEY_BATTERY_ALPHA, 1f)
+    }
+
+    fun setBatteryAlpha(context: Context, alpha: Float) {
+        prefs(context).edit().putFloat(KEY_BATTERY_ALPHA, alpha).apply()
+    }
+
+    fun powerAlpha(context: Context): Float {
+        return prefs(context).getFloat(KEY_POWER_ALPHA, 1f)
+    }
+
+    fun setPowerAlpha(context: Context, alpha: Float) {
+        prefs(context).edit().putFloat(KEY_POWER_ALPHA, alpha).apply()
+    }
+
             .apply()
     }
 
@@ -1184,6 +1254,22 @@ object OverlayPrefs {
 
     fun turnSignalsHideWhenMapActive(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_TURN_SIGNALS_HIDE_WHEN_MAP_ACTIVE, false)
+    }
+
+    fun batteryEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_BATTERY_ENABLED, true)
+    }
+
+    fun setBatteryEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_BATTERY_ENABLED, enabled).apply()
+    }
+
+    fun powerEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_POWER_ENABLED, true)
+    }
+
+    fun setPowerEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_POWER_ENABLED, enabled).apply()
     }
 
     fun setTurnSignalsHideWhenMapActive(context: Context, enabled: Boolean) {

@@ -60,7 +60,9 @@ data class NavigationHudState(
     val trafficLights: List<TrafficLightInfo> = emptyList(),
     val turnSignalLeft: Boolean = false,
     val turnSignalRight: Boolean = false,
-    val turnSignalHazard: Boolean = false
+    val turnSignalHazard: Boolean = false,
+    val batterySoc: Int? = null,
+    val enginePower: Float? = null
 ) {
     fun isEmpty(): Boolean {
         return primaryText.isBlank() &&
@@ -77,12 +79,12 @@ data class NavigationHudState(
             tripStatusBitmap == null &&
             !hudSpeedHasCamera &&
             !hudSpeedHasGps &&
-            !strelkaActive &&
-            strelkaBitmap == null &&
             trafficLights.isEmpty() &&
             !turnSignalLeft &&
             !turnSignalRight &&
-            !turnSignalHazard
+            !turnSignalHazard &&
+            batterySoc == null &&
+            enginePower == null
     }
 }
 

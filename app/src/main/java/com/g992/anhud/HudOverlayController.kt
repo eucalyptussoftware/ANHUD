@@ -613,6 +613,8 @@ class HudOverlayController(private val context: Context) {
         speedometerPosition: PointF?,
         turnSignalsPosition: PointF?,
         clockPosition: PointF?,
+        batteryPosition: PointF?,
+        powerPosition: PointF?,
         navScale: Float?,
         laneGuidanceScale: Float?,
         navTextScale: Float?,
@@ -628,6 +630,8 @@ class HudOverlayController(private val context: Context) {
         turnSignalsSpacingDp: Float?,
         turnSignalsIconStyle: Int?,
         clockScale: Float?,
+        batteryScale: Float?,
+        powerScale: Float?,
         navAlpha: Float?,
         laneGuidanceAlpha: Float?,
         arrowAlpha: Float?,
@@ -639,6 +643,8 @@ class HudOverlayController(private val context: Context) {
         speedometerAlpha: Float?,
         turnSignalsAlpha: Float?,
         clockAlpha: Float?,
+        batteryAlpha: Float?,
+        powerAlpha: Float?,
         containerAlpha: Float?,
         mapAlpha: Float?,
         navEnabled: Boolean?,
@@ -658,6 +664,8 @@ class HudOverlayController(private val context: Context) {
         speedometerShowUnitText: Boolean?,
         turnSignalsEnabled: Boolean?,
         clockEnabled: Boolean?,
+        batteryEnabled: Boolean?,
+        powerEnabled: Boolean?,
         trafficLightMaxActive: Int?,
         mapEnabled: Boolean?,
         preview: Boolean? = null,
@@ -726,6 +734,12 @@ class HudOverlayController(private val context: Context) {
                 turnSignalsPositionDp = turnSignalsPosition
             }
             if (clockPosition != null) {
+        if (batteryPosition != null) {
+            this.batteryPositionDp = batteryPosition
+        }
+        if (powerPosition != null) {
+            this.powerPositionDp = powerPosition
+        }
                 clockPositionDp = clockPosition
             }
             if (navScale != null) {
@@ -777,6 +791,12 @@ class HudOverlayController(private val context: Context) {
                 applyTurnSignalsIconStyle()
             }
             if (clockScale != null) {
+        if (batteryScale != null) {
+            this.batteryScale = batteryScale
+        }
+        if (powerScale != null) {
+            this.powerScale = powerScale
+        }
                 this.clockScale = clockScale.coerceAtLeast(0f)
             }
             if (navAlpha != null) {
@@ -810,6 +830,12 @@ class HudOverlayController(private val context: Context) {
                 this.turnSignalsAlpha = turnSignalsAlpha.coerceIn(0f, 1f)
             }
             if (clockAlpha != null) {
+        if (batteryAlpha != null) {
+            this.batteryAlpha = batteryAlpha
+        }
+        if (powerAlpha != null) {
+            this.powerAlpha = powerAlpha
+        }
                 this.clockAlpha = clockAlpha.coerceIn(0f, 1f)
             }
             if (containerAlpha != null) {
@@ -869,6 +895,12 @@ class HudOverlayController(private val context: Context) {
                 this.turnSignalsEnabled = turnSignalsEnabled
             }
             if (clockEnabled != null) {
+        if (batteryEnabled != null) {
+            this.batteryEnabled = batteryEnabled
+        }
+        if (powerEnabled != null) {
+            this.powerEnabled = powerEnabled
+        }
                 this.clockEnabled = clockEnabled
             }
             if (trafficLightMaxActive != null) {
@@ -2217,6 +2249,50 @@ class HudOverlayController(private val context: Context) {
         applyLayout()
     }
 
+
+    private fun updateBatteryAndPower(
+        batterySoc: Int?,
+        enginePower: Float?,
+        showPreview: Boolean
+    ) {
+        val bContainer = batteryContainer
+        if (bContainer != null) {
+            val soc = if (showPreview) 85 else batterySoc
+            if (soc != null) {
+                batteryView?.text = context.getString(R.string.battery_soc_format, soc)
+            } else {
+                batteryView?.text = context.getString(R.string.battery_soc_format_placeholder)
+            }
+            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_BATTERY) {
+                bContainer.background = ContextCompat.getDrawable(context, R.drawable.bg_nav_block_outline)
+            } else {
+                bContainer.background = null
+            }
+            bContainer.visibility = if (batteryEnabled) View.VISIBLE else View.GONE
+        }
+        
+        val pContainer = powerContainer
+        if (pContainer != null) {
+            val pwr = if (showPreview) 20.0f else enginePower
+            if (pwr != null) {
+                val absPwr = Math.abs(pwr)
+                if (absPwr > 0f && absPwr < 1f) {
+                    val str = String.format(Locale.US, "%.1f", pwr)
+                    powerView?.text = context.getString(R.string.engine_power_format, str)
+                } else {
+                    powerView?.text = context.getString(R.string.engine_power_format, Math.round(pwr).toString())
+                }
+            } else {
+                powerView?.text = context.getString(R.string.engine_power_format, "--")
+            }
+            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_POWER) {
+                pContainer.background = ContextCompat.getDrawable(context, R.drawable.bg_nav_block_outline)
+            } else {
+                pContainer.background = null
+            }
+            pContainer.visibility = if (powerEnabled) View.VISIBLE else View.GONE
+        }
+    }
     private fun shouldHideHudSpeed(state: NavigationHudState, showPreview: Boolean): Boolean {
         if (showPreview) {
             cancelHudSpeedHide()
@@ -3269,6 +3345,12 @@ class HudOverlayController(private val context: Context) {
         }
         clockView?.let {
             positionView(it, clockPositionDp, clockScale, clockAlpha, metrics.density, containerWidth, containerHeight)
+        }
+        batteryContainer?.let {
+            positionView(it, batteryPositionDp, batteryScale, batteryAlpha, metrics.density, containerWidth, containerHeight)
+        }
+        powerContainer?.let {
+            positionView(it, powerPositionDp, powerScale, powerAlpha, metrics.density, containerWidth, containerHeight)
         }
         updateMapView(displayContext, containerWidthPx, containerHeightPx)
     }
