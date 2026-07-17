@@ -24,6 +24,8 @@ class AnhudApp : Application() {
             addAction(MAP_ROUTE_ALERTS_ALT_ACTION)
             addAction(MAP_MANEUVER_BLOCK_ACTION)
             addAction(MAP_MANEUVER_BLOCK_ALT_ACTION)
+            addAction(WAZE_ROUTE_POLYLINE_ACTION)
+            addAction(WAZE_ROUTE_STATE_ACTION)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(mapRouteTelemetryReceiver, filter, RECEIVER_EXPORTED)

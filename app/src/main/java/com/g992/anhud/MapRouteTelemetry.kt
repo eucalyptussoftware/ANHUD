@@ -15,6 +15,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
+import org.json.JSONObject
 import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -177,6 +178,36 @@ object MapRouteTelemetryStore {
         ensureRouteLocationTracking(context.applicationContext)
         clearLegacyPersistedRouteTelemetry(context.applicationContext)
         when (intent.action) {
+            WAZE_ROUTE_POLYLINE_ACTION -> {
+                val points = parseWazeRouteGeoJson(intent.getStringExtra(WAZE_EXTRA_ROUTE_GEOJSON))
+                if (points.size >= 2) {
+                    val routeId = "waze-${points.routePointsToken(null)}"
+                    runtimeState = MAP_ROUTE_STATE_BUILT
+                    runtimeRoute = RuntimeRoute(
+                        routeId = routeId,
+                        points = points,
+                        routeToken = points.routePointsToken(routeId),
+                        jamsRaw = null,
+                        lanePointsRaw = null
+                    )
+                    runtimeRouteAlertsRaw = null
+                    runtimeRouteAlertsRouteId = null
+                    laneGuidanceCandidates.clear()
+                    Log.d(ROUTE_TELEMETRY_TAG, "Waze route received: ${points.size} points")
+                } else {
+                    Log.w(ROUTE_TELEMETRY_TAG, "Waze route ignored: fewer than two valid points")
+                }
+            }
+
+            WAZE_ROUTE_STATE_ACTION -> {
+                val active = intent.getBooleanExtra(WAZE_EXTRA_ROUTE_ACTIVE, false)
+                if (!active) {
+                    runtimeState = MAP_ROUTE_STATE_CANCELLED
+                    clearRuntimeRoute()
+                    Log.d(ROUTE_TELEMETRY_TAG, "Waze navigation ended; route cleared")
+                }
+            }
+
             MAP_ROUTE_TELEMETRY_ACTION -> {
                 val sampled = intent.getStringExtra(MAP_EXTRA_ROUTE_SAMPLED)
                 val jams = intent.getStringExtra(MAP_EXTRA_ROUTE_JAMS)
@@ -243,6 +274,29 @@ object MapRouteTelemetryStore {
             }
         }
         publishSnapshotIfChanged(context, buildSnapshot())
+    }
+
+    private fun parseWazeRouteGeoJson(raw: String?): List<LatLng> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching {
+            val coordinates = JSONObject(raw)
+                .optJSONObject("geometry")
+                ?.optJSONArray("coordinates")
+                ?: return emptyList()
+            buildList {
+                for (index in 0 until coordinates.length()) {
+                    val pair = coordinates.optJSONArray(index) ?: continue
+                    val longitude = pair.optDouble(0, Double.NaN)
+                    val latitude = pair.optDouble(1, Double.NaN)
+                    if (latitude in -90.0..90.0 && longitude in -180.0..180.0) {
+                        add(LatLng(latitude, longitude))
+                    }
+                }
+            }
+        }.getOrElse { error ->
+            Log.w(ROUTE_TELEMETRY_TAG, "Unable to parse Waze route geometry", error)
+            emptyList()
+        }
     }
 
     private fun handleManeuverBlockIntent(context: Context, intent: Intent) {
@@ -1121,6 +1175,10 @@ const val MAP_ROUTE_ALERTS_ACTION = "com.yandex.ROUTE_ALERTS"
 const val MAP_ROUTE_ALERTS_ALT_ACTION = "ru.yandex.yandexmaps.ROUTE_ALERTS"
 const val MAP_MANEUVER_BLOCK_ACTION = "com.yandex.MANEUVER_BLOCK_BITMAP"
 const val MAP_MANEUVER_BLOCK_ALT_ACTION = "ru.yandex.yandexmaps.MANEUVER_BLOCK_BITMAP"
+const val WAZE_ROUTE_POLYLINE_ACTION = "com.g992.anhud.WAZE_ROUTE_POLYLINE"
+const val WAZE_ROUTE_STATE_ACTION = "com.g992.anhud.WAZE_ROUTE_STATE"
+const val WAZE_EXTRA_ROUTE_GEOJSON = "route_geojson"
+const val WAZE_EXTRA_ROUTE_ACTIVE = "active"
 const val MAP_EXTRA_ROUTE_STATE = "route_state"
 const val MAP_EXTRA_ROUTE_ID = "route_id"
 const val MAP_EXTRA_ROUTE_START = "route_start"

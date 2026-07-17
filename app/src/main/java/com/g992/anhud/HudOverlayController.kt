@@ -2113,7 +2113,7 @@ class HudOverlayController(private val context: Context) {
             preview = previewLaneGuidance,
             fillTransparentBackground = laneGuidanceTransparentFillVisible
         )
-        updateManeuver(state.maneuverBitmap, previewNav)
+        updateManeuver(state.maneuverBitmap, state.maneuverType, state.rawNextText, previewNav)
         updateArrowManeuver(state.maneuverBitmap, previewArrow)
         if (clock != null) {
             updateClockText()
@@ -2122,7 +2122,8 @@ class HudOverlayController(private val context: Context) {
         val navHasContent = primaryText.isNotBlank() ||
             secondaryText.isNotBlank() ||
             timeText.isNotBlank() ||
-            state.maneuverBitmap != null
+            state.maneuverBitmap != null ||
+            WazeManeuverMapper.isWazeType(state.maneuverType)
         val navVisible = if (showPreview) {
             previewNav
         } else {
@@ -2389,7 +2390,7 @@ class HudOverlayController(private val context: Context) {
         return prepared
     }
 
-    private fun updateManeuver(bitmap: android.graphics.Bitmap?, preview: Boolean) {
+    private fun updateManeuver(bitmap: android.graphics.Bitmap?, maneuverType: String, nextText: String, preview: Boolean) {
         val image = maneuverView ?: return
         val label = maneuverLabel ?: return
         val container = maneuverContainer ?: return
@@ -2408,6 +2409,18 @@ class HudOverlayController(private val context: Context) {
             image.setImageBitmap(bitmap)
             image.visibility = View.VISIBLE
             label.visibility = View.GONE
+        } else if (WazeManeuverMapper.isWazeType(maneuverType)) {
+            val wazeId = WazeManeuverMapper.extractWazeId(maneuverType)
+            if (wazeId >= 0) {
+                val drawableRes = WazeManeuverMapper.drawableForManeuver(wazeId)
+                image.setImageResource(drawableRes)
+                image.visibility = View.VISIBLE
+                label.text = nextText
+                label.visibility = if (nextText.isNotBlank()) View.VISIBLE else View.GONE
+            } else {
+                image.visibility = View.GONE
+                label.visibility = View.GONE
+            }
         } else {
             image.visibility = View.GONE
             label.visibility = View.GONE
