@@ -11,6 +11,8 @@ HUD_RELATIVE = Path("smali_classes4/com/waze/HudControl.smali")
 NAV_RELATIVE = Path("smali_classes5/com/waze/navigate/NavigationInfoNativeManager.smali")
 CANVAS_RELATIVE = Path("smali_classes5/com/waze/map/canvas/CanvasDelegatorImpl.smali")
 LOC_RELATIVE = Path("smali_classes5/com/waze/location/LocationSensorListener.smali")
+ALERTER_RELATIVE = Path("smali_classes4/com/waze/alerters/AlerterNativeManager.smali")
+
 BACKUP_DIR_NAME = ".anhud_waze_route_backup"
 MARKER = "ANHUD_WAZE_ROUTE_PATCH"
 
@@ -127,6 +129,81 @@ ROUTE_METHOD = r'''
     return-void
 .end method
 
+.method public static publishCameras(Landroid/content/Context;Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;)V
+    .locals 7
+
+    if-eqz p0, :end
+    if-eqz p1, :end
+
+    invoke-virtual {p1}, Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;->getDescriptorsCount()I
+    move-result v0
+
+    const/4 v1, 0x0
+    :loop_start
+    if-ge v1, v0, :clear_camera
+
+    invoke-virtual {p1, v1}, Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;->getDescriptors(I)Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;
+    move-result-object v2
+    if-eqz v2, :loop_next
+
+    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;->getInfo()Lcom/waze/jni/protos/alerters/AlerterInfo;
+    move-result-object v3
+    if-eqz v3, :loop_next
+
+    invoke-virtual {v3}, Lcom/waze/jni/protos/alerters/AlerterInfo;->getTypeValue()I
+    move-result v4
+    const/16 v5, 0xa
+    if-eq v4, v5, :found_camera
+
+    :loop_next
+    add-int/lit8 v1, v1, 0x1
+    goto :loop_start
+
+    :found_camera
+    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;->getAlertId()Lcom/waze/jni/protos/alerters/AlerterId;
+    move-result-object v2
+    if-eqz v2, :loop_next
+
+    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/AlerterId;->getUuid()Ljava/lang/String;
+    move-result-object v2
+
+    invoke-virtual {v3}, Lcom/waze/jni/protos/alerters/AlerterInfo;->getDistanceString()Ljava/lang/String;
+    move-result-object v3
+
+    new-instance v5, Landroid/content/Intent;
+    const-string v6, "com.yandex.ROADCAMERA"
+    invoke-direct {v5, v6}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
+
+    const-string v6, "com.g992.anhud"
+    invoke-virtual {v5, v6}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v6, "camera_id"
+    invoke-virtual {v5, v6, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v6, "distance_text"
+    invoke-virtual {v5, v6, v3}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    invoke-virtual {p0, v5}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
+    goto :end
+
+    :clear_camera
+    new-instance v5, Landroid/content/Intent;
+    const-string v6, "com.yandex.ROADCAMERA"
+    invoke-direct {v5, v6}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
+
+    const-string v6, "com.g992.anhud"
+    invoke-virtual {v5, v6}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v6, "camera_id"
+    const-string v2, ""
+    invoke-virtual {v5, v6, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    invoke-virtual {p0, v5}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
+
+    :end
+    return-void
+.end method
+
 .method private static h9(Landroid/content/Context;I)V
     .locals 0
 
@@ -178,6 +255,82 @@ ROUTE_METHOD = r'''
     :end
     return-void
 .end method
+
+.method public static publishCameras(Landroid/content/Context;Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;)V
+    .locals 7
+
+    if-eqz p0, :end
+    if-eqz p1, :end
+
+    invoke-virtual {p1}, Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;->getDescriptorsCount()I
+    move-result v0
+
+    const/4 v1, 0x0
+    :loop_start
+    if-ge v1, v0, :clear_camera
+
+    invoke-virtual {p1, v1}, Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;->getDescriptors(I)Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;
+    move-result-object v2
+    if-eqz v2, :loop_next
+
+    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;->getInfo()Lcom/waze/jni/protos/alerters/AlerterInfo;
+    move-result-object v3
+    if-eqz v3, :loop_next
+
+    invoke-virtual {v3}, Lcom/waze/jni/protos/alerters/AlerterInfo;->getTypeValue()I
+    move-result v4
+    const/16 v5, 0xa
+    if-eq v4, v5, :found_camera
+
+    :loop_next
+    add-int/lit8 v1, v1, 0x1
+    goto :loop_start
+
+    :found_camera
+    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/NativeAlertDescriptor;->getAlertId()Lcom/waze/jni/protos/alerters/AlerterId;
+    move-result-object v2
+    if-eqz v2, :loop_next
+
+    invoke-virtual {v2}, Lcom/waze/jni/protos/alerters/AlerterId;->getUuid()Ljava/lang/String;
+    move-result-object v2
+
+    invoke-virtual {v3}, Lcom/waze/jni/protos/alerters/AlerterInfo;->getDistanceString()Ljava/lang/String;
+    move-result-object v3
+
+    new-instance v5, Landroid/content/Intent;
+    const-string v6, "com.yandex.ROADCAMERA"
+    invoke-direct {v5, v6}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
+
+    const-string v6, "com.g992.anhud"
+    invoke-virtual {v5, v6}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v6, "camera_id"
+    invoke-virtual {v5, v6, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v6, "distance_text"
+    invoke-virtual {v5, v6, v3}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    invoke-virtual {p0, v5}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
+    goto :end
+
+    :clear_camera
+    new-instance v5, Landroid/content/Intent;
+    const-string v6, "com.yandex.ROADCAMERA"
+    invoke-direct {v5, v6}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
+
+    const-string v6, "com.g992.anhud"
+    invoke-virtual {v5, v6}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v6, "camera_id"
+    const-string v2, ""
+    invoke-virtual {v5, v6, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    invoke-virtual {p0, v5}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
+
+    :end
+    return-void
+.end method
+
 '''
 
 ROUTE_HOOK = '''.method onNavigationRouteChanged(Lcom/waze/jni/protos/navigate/NavigationRoute;)V
@@ -197,14 +350,12 @@ STATE_HOOK = '''    invoke-static {p0}, Lcom/waze/HudControl;->si(Landroid/conte
 .end method
 '''
 
-
-def files(root: Path) -> tuple[Path, Path, Path, Path]:
-    hud, nav, canvas, loc = root / HUD_RELATIVE, root / NAV_RELATIVE, root / CANVAS_RELATIVE, root / LOC_RELATIVE
-    missing = [str(path) for path in (hud, nav, canvas, loc) if not path.is_file()]
+def files(root: Path) -> tuple[Path, Path, Path, Path, Path]:
+    hud, nav, canvas, loc, alerter = root / HUD_RELATIVE, root / NAV_RELATIVE, root / CANVAS_RELATIVE, root / LOC_RELATIVE, root / ALERTER_RELATIVE
+    missing = [str(path) for path in (hud, nav, canvas, loc, alerter) if not path.is_file()]
     if missing:
         raise RuntimeError("Unsupported decompilation; missing:\n" + "\n".join(missing))
-    return hud, nav, canvas, loc
-
+    return hud, nav, canvas, loc, alerter
 
 def backup(root: Path, source: Path) -> None:
     target = root / BACKUP_DIR_NAME / source.relative_to(root)
@@ -212,11 +363,11 @@ def backup(root: Path, source: Path) -> None:
     if not target.exists():
         shutil.copy2(source, target)
 
-
 def patch(root: Path) -> None:
-    hud, nav, canvas, loc = files(root)
-    hud_text, nav_text, canvas_text, loc_text = hud.read_text(), nav.read_text(), canvas.read_text(), loc.read_text()
-    if MARKER in hud_text or MARKER in nav_text or MARKER in canvas_text or MARKER in loc_text:
+    hud, nav, canvas, loc, alerter = files(root)
+    hud_text, nav_text, canvas_text, loc_text, alerter_text = hud.read_text(), nav.read_text(), canvas.read_text(), loc.read_text(), alerter.read_text()
+    
+    if MARKER in hud_text or MARKER in nav_text or MARKER in canvas_text or MARKER in loc_text or MARKER in alerter_text:
         raise RuntimeError("This decompilation is already patched. Use status or restore first.")
 
     state_anchor = '''    invoke-static {p0}, Lcom/waze/HudControl;->si(Landroid/content/Context;)V
@@ -227,6 +378,7 @@ def patch(root: Path) -> None:
 .method private static h1'''
     if state_anchor not in hud_text:
         raise RuntimeError("Unsupported HudControl.smali: navigation-state anchor was not found.")
+        
     route_anchor = '''.method onNavigationRouteChanged(Lcom/waze/jni/protos/navigate/NavigationRoute;)V
     .locals 2
 '''
@@ -254,6 +406,7 @@ def patch(root: Path) -> None:
     backup(root, nav)
     backup(root, canvas)
     backup(root, loc)
+    backup(root, alerter)
 
     dispatch_anchor = '''    :pswitch_6
     invoke-static {p0, p2}, Lcom/waze/HudControl;->h6(Landroid/content/Context;I)V
@@ -382,23 +535,7 @@ def patch(root: Path) -> None:
     invoke-static {p0, p4}, Lcom/waze/HudControl;->h12(Landroid/content/Context;Ljava/lang/String;)V
     return-void
 
-    :pswitch_data_0
-    .packed-switch 0x0
-        :pswitch_0
-        :pswitch_1
-        :pswitch_2
-        :pswitch_3
-        :pswitch_4
-        :pswitch_5
-        :pswitch_6
-        :pswitch_7
-        :pswitch_8
-        :pswitch_9
-        :pswitch_a
-        :pswitch_b
-        :pswitch_c
-    .end packed-switch
-'''
+    :pswitch_data_0'''
 
     if telemetry_dispatch_anchor not in patched_hud:
         raise RuntimeError("Unsupported HudControl.smali: telemetry dispatch anchor was not found.")
@@ -487,7 +624,6 @@ def patch(root: Path) -> None:
     .locals 2
 
     .line 1
-    # ANHUD_WAZE_ROUTE_PATCH
     sget-object v0, Lcom/waze/mobile/WazeMobileApplication;->mContext:Landroid/content/Context;
     const/4 v1, 0x6
     invoke-static {v0, v1, p3, p1, v0}, Lcom/waze/HudControl;->dispatch(Landroid/content/Context;IIILjava/lang/Object;)V
@@ -498,6 +634,27 @@ def patch(root: Path) -> None:
         loc.write_text(patched_loc)
     else:
         print("Warning: Unsupported LocationSensorListener.smali; updateSpeedometer not found. Skipping loc patch.")
+
+    alerter_anchor = '''.method updateAlertersRepository(Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;)V
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lcom/waze/alerters/AlerterNativeManager;->nativeAlertsFlow:Ldf/x;'''
+    alerter_replacement = '''.method updateAlertersRepository(Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;)V
+    .locals 1
+
+    # ANHUD_WAZE_ROUTE_PATCH
+    sget-object v0, Lcom/waze/mobile/WazeMobileApplication;->mContext:Landroid/content/Context;
+    invoke-static {v0, p1}, Lcom/waze/HudControl;->publishCameras(Landroid/content/Context;Lcom/waze/jni/protos/alerters/NativeAlertRepositoryUpdate;)V
+
+    .line 1
+    iget-object p0, p0, Lcom/waze/alerters/AlerterNativeManager;->nativeAlertsFlow:Ldf/x;'''
+    
+    if alerter_anchor in alerter_text:
+        patched_alerter = alerter_text.replace(alerter_anchor, alerter_replacement, 1)
+        alerter.write_text(patched_alerter)
+    else:
+        print("Warning: Unsupported AlerterNativeManager.smali; updateAlertersRepository not found.")
 
     hud.write_text(patched_hud + ROUTE_METHOD)
     nav.write_text(
@@ -514,24 +671,24 @@ def patch(root: Path) -> None:
 
 
 def restore(root: Path) -> None:
-    hud, nav, canvas, loc = files(root)
+    hud, nav, canvas, loc, alerter = files(root)
     backup_root = root / BACKUP_DIR_NAME
-    restore_pairs = [(backup_root / source.relative_to(root), source) for source in (hud, nav, canvas, loc)
+    restore_pairs = [(backup_root / source.relative_to(root), source) for source in (hud, nav, canvas, loc, alerter)
                      if (backup_root / source.relative_to(root)).is_file()]
     if not restore_pairs:
         raise RuntimeError("No backup files were found.")
     for saved, destination in restore_pairs:
         shutil.copy2(saved, destination)
     print(f"Restored {len(restore_pairs)} files from {backup_root}")
-    missing = [source for source in (hud, nav, canvas, loc)
+    missing = [source for source in (hud, nav, canvas, loc, alerter)
                if not (backup_root / source.relative_to(root)).is_file()]
     if missing:
         print(f"Note: no backup found for {len(missing)} file(s); they remain untouched: {[m.name for m in missing]}")
 
 
 def status(root: Path) -> None:
-    hud, nav, canvas, loc = files(root)
-    patched = MARKER in hud.read_text() and MARKER in nav.read_text() and MARKER in canvas.read_text() and MARKER in loc.read_text()
+    hud, nav, canvas, loc, alerter = files(root)
+    patched = MARKER in hud.read_text() and MARKER in nav.read_text() and MARKER in canvas.read_text() and MARKER in loc.read_text() and MARKER in alerter.read_text()
     backup = root / BACKUP_DIR_NAME
     print("patched" if patched else "not patched")
     print(f"backup: {'present' if backup.is_dir() else 'absent'} ({backup})")
