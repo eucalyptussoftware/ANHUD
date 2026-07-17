@@ -25,7 +25,7 @@ class NavigationReceiver : BroadcastReceiver() {
             Log.d(TAG, "not Yandex intent: $action extras=${formatExtras(intent)}")
         }
         when (action) {
-            ACTION_NAV_UPDATE, ACTION_NAV_UPDATE_DEBUG -> {
+            ACTION_NAV_UPDATE, ACTION_NAV_UPDATE_DEBUG, ACTION_WAZE_NAV_UPDATE -> {
                 Log.d(
                     TAG,
                     "route_active extra present=${intent.hasExtra(EXTRA_ROUTE_ACTIVE)} value=" +
@@ -41,6 +41,47 @@ class NavigationReceiver : BroadcastReceiver() {
                     timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, System.currentTimeMillis()),
                     hasImage = intent.getBooleanExtra(EXTRA_HAS_IMAGE, false)
                 )
+                val wazeManeuverId = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    intent.getIntExtra(EXTRA_WAZE_MANEUVER_ID, -1)
+                } else {
+                    -1
+                }
+                val wazeInstructionDistance = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    combineWazeValueAndUnit(
+                        intent.getStringExtra(EXTRA_WAZE_INSTRUCTION_DISTANCE),
+                        intent.getStringExtra(EXTRA_WAZE_INSTRUCTION_DISTANCE_UNIT)
+                    )
+                } else {
+                    ""
+                }
+                val wazeArrival = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    normalizeText(intent.getStringExtra(EXTRA_WAZE_ARRIVAL).orEmpty())
+                } else {
+                    ""
+                }
+                val wazeRemainingDistance = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    combineWazeValueAndUnit(
+                        intent.getStringExtra(EXTRA_WAZE_REMAINING_DISTANCE),
+                        intent.getStringExtra(EXTRA_WAZE_REMAINING_DISTANCE_UNIT)
+                    )
+                } else {
+                    ""
+                }
+                val wazeTime = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    normalizeText(intent.getStringExtra(EXTRA_WAZE_TIME).orEmpty())
+                } else {
+                    ""
+                }
+                val wazeSpeedKmh = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    intent.getIntExtra(EXTRA_WAZE_CURRENT_SPEED, -1).takeIf { it >= 0 }
+                } else {
+                    null
+                }
+                val wazeOverSpeed = if (action == ACTION_WAZE_NAV_UPDATE) {
+                    intent.getBooleanExtra(EXTRA_WAZE_OVER_SPEED, false)
+                } else {
+                    false
+                }
                 Log.d(TAG, "Navigation update: $update")
                 UiLogStore.append(
                     LogCategory.NAVIGATION,
@@ -67,18 +108,59 @@ class NavigationReceiver : BroadcastReceiver() {
                     .joinToString(" • ")
                 NavigationHudStore.update { state ->
                     state.copy(
-                        primaryText = primary,
-                        secondaryText = secondary,
-                        speedLimit = update.speedLimit,
                         source = update.source.ifBlank { state.source },
                         routeActive = update.routeActive,
+                        speedKmh = wazeSpeedKmh ?: state.speedKmh,
                         lastUpdated = update.timestamp,
-                    lastAction = action,
+                        lastAction = action,
                         rawTitle = update.title,
                         rawText = update.text,
                         rawSubtext = update.subtext,
-                        rawSpeedLimit = update.speedLimit
+                        speedLimit = if (action == ACTION_WAZE_NAV_UPDATE && !intent.hasExtra(EXTRA_SPEED_LIMIT)) {
+                            state.speedLimit
+                        } else {
+                            update.speedLimit
+                        },
+                        rawSpeedLimit = if (action == ACTION_WAZE_NAV_UPDATE && !intent.hasExtra(EXTRA_SPEED_LIMIT)) {
+                            state.rawSpeedLimit
+                        } else {
+                            update.speedLimit
+                        },
+                        primaryText = if (action == ACTION_WAZE_NAV_UPDATE) {
+                            update.title.ifBlank { state.primaryText }
+                        } else {
+                            primary
+                        },
+                        secondaryText = if (action == ACTION_WAZE_NAV_UPDATE) {
+                            update.text.ifBlank { update.subtext }.ifBlank { state.secondaryText }
+                        } else {
+                            secondary
+                        },
+                        arrival = wazeArrival.ifBlank { state.arrival },
+                        distance = wazeRemainingDistance.ifBlank { state.distance },
+                        time = wazeTime.ifBlank { state.time },
+                        rawArrival = wazeArrival.ifBlank { state.rawArrival },
+                        rawDistance = wazeRemainingDistance.ifBlank { state.rawDistance },
+                        rawTime = wazeTime.ifBlank { state.rawTime },
+                        rawNextText = wazeInstructionDistance.ifBlank { state.rawNextText },
+                        rawNextStreet = if (action == ACTION_WAZE_NAV_UPDATE) {
+                            update.title.ifBlank { state.rawNextStreet }
+                        } else {
+                            state.rawNextStreet
+                        },
+                        distanceUnit = extractTrailingUnit(wazeInstructionDistance)
+                            .ifBlank { state.distanceUnit }
                     )
+                }
+                if (action == ACTION_WAZE_NAV_UPDATE && wazeManeuverId >= 0) {
+                    NavigationHudStore.update { state ->
+                        state.copy(
+                            maneuverType = "waze_$wazeManeuverId",
+                            nativeTurnId = wazeManeuverId.takeIf { it <= MAX_SUPPORTED_TURN_ID },
+                            lastUpdated = update.timestamp,
+                            lastAction = action
+                        )
+                    }
                 }
             }
             ACTION_YANDEX_MANEUVER -> {
@@ -505,6 +587,7 @@ class NavigationReceiver : BroadcastReceiver() {
 
         const val ACTION_NAV_UPDATE = "plus.monjaro.NAVIGATION_UPDATE"
         const val ACTION_NAV_UPDATE_DEBUG = "debug.monjaro.NAVIGATION_UPDATE"
+        const val ACTION_WAZE_NAV_UPDATE = "com.g992.anhud.WAZE_NAV_UPDATE"
 
         const val EXTRA_TITLE = "title"
         const val EXTRA_TEXT = "text"
@@ -514,7 +597,16 @@ class NavigationReceiver : BroadcastReceiver() {
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TIMESTAMP = "timestamp"
         const val EXTRA_HAS_IMAGE = "has_image"
-
+        const val EXTRA_WAZE_MANEUVER_ID = "waze_maneuver_id"
+        const val EXTRA_WAZE_EXIT_NUMBER = "waze_exit_number"
+        const val EXTRA_WAZE_INSTRUCTION_DISTANCE = "waze_instruction_distance"
+        const val EXTRA_WAZE_INSTRUCTION_DISTANCE_UNIT = "waze_instruction_distance_unit"
+        const val EXTRA_WAZE_ARRIVAL = "waze_arrival"
+        const val EXTRA_WAZE_REMAINING_DISTANCE = "waze_remaining_distance"
+        const val EXTRA_WAZE_REMAINING_DISTANCE_UNIT = "waze_remaining_distance_unit"
+        const val EXTRA_WAZE_TIME = "waze_time"
+        const val EXTRA_WAZE_CURRENT_SPEED = "waze_current_speed"
+        const val EXTRA_WAZE_OVER_SPEED = "waze_over_speed"
         const val ACTION_YANDEX_MANEUVER = "com.yandex.MANEUVER"
         const val ACTION_YANDEX_NEXT_TEXT = "com.yandex.NIXT"
         const val ACTION_YANDEX_NEXT_STREET = "com.yandex.NEXTSTREET"
@@ -688,6 +780,14 @@ class NavigationReceiver : BroadcastReceiver() {
                 .replace(Regex("\\s+"), " ")
                 .trim()
             return normalized
+        }
+
+        private fun combineWazeValueAndUnit(value: String?, unit: String?): String {
+            val normalizedValue = normalizeText(value.orEmpty())
+            val normalizedUnit = normalizeText(unit.orEmpty())
+            return listOf(normalizedValue, normalizedUnit)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
         }
 
         private fun shouldSuppressDuplicateYandexIntent(intent: Intent, action: String): Boolean {
