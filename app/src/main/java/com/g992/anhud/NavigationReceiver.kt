@@ -37,7 +37,7 @@ class NavigationReceiver : BroadcastReceiver() {
                     subtext = normalizeText(intent.getStringExtra(EXTRA_SUBTEXT).orEmpty()),
                     speedLimit = normalizeText(intent.getStringExtra(EXTRA_SPEED_LIMIT).orEmpty()),
                     routeActive = intent.getBooleanExtra(EXTRA_ROUTE_ACTIVE, false),
-                    source = normalizeText(intent.getStringExtra(EXTRA_SOURCE).orEmpty()),
+                    source = normalizeText(getExtraAsString(intent, EXTRA_SOURCE).orEmpty()),
                     timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, System.currentTimeMillis()),
                     hasImage = intent.getBooleanExtra(EXTRA_HAS_IMAGE, false)
                 )
@@ -48,27 +48,27 @@ class NavigationReceiver : BroadcastReceiver() {
                 }
                 val wazeInstructionDistance = if (action == ACTION_WAZE_NAV_UPDATE) {
                     combineWazeValueAndUnit(
-                        intent.getStringExtra(EXTRA_WAZE_INSTRUCTION_DISTANCE),
-                        intent.getStringExtra(EXTRA_WAZE_INSTRUCTION_DISTANCE_UNIT)
+                        getExtraAsString(intent, EXTRA_WAZE_INSTRUCTION_DISTANCE),
+                        getExtraAsString(intent, EXTRA_WAZE_INSTRUCTION_DISTANCE_UNIT)
                     )
                 } else {
                     ""
                 }
                 val wazeArrival = if (action == ACTION_WAZE_NAV_UPDATE) {
-                    normalizeText(intent.getStringExtra(EXTRA_WAZE_ARRIVAL).orEmpty())
+                    normalizeText(getExtraAsString(intent, EXTRA_WAZE_ARRIVAL).orEmpty())
                 } else {
                     ""
                 }
                 val wazeRemainingDistance = if (action == ACTION_WAZE_NAV_UPDATE) {
                     combineWazeValueAndUnit(
-                        intent.getStringExtra(EXTRA_WAZE_REMAINING_DISTANCE),
-                        intent.getStringExtra(EXTRA_WAZE_REMAINING_DISTANCE_UNIT)
+                        getExtraAsString(intent, EXTRA_WAZE_REMAINING_DISTANCE),
+                        getExtraAsString(intent, EXTRA_WAZE_REMAINING_DISTANCE_UNIT)
                     )
                 } else {
                     ""
                 }
                 val wazeTime = if (action == ACTION_WAZE_NAV_UPDATE) {
-                    normalizeText(intent.getStringExtra(EXTRA_WAZE_TIME).orEmpty())
+                    normalizeText(getExtraAsString(intent, EXTRA_WAZE_TIME).orEmpty())
                 } else {
                     ""
                 }
@@ -769,6 +769,17 @@ class NavigationReceiver : BroadcastReceiver() {
             pendingNavigatorIntentTimeout = null
             lastNavigatorIntentAt = 0L
             navigatorIntentTimeoutContext = null
+        }
+
+        fun getExtraAsString(intent: Intent, key: String): String? {
+            val bundle = intent.extras ?: return null
+            if (!bundle.containsKey(key)) return null
+            val value = bundle.get(key) ?: return null
+            return when (value) {
+                is String -> value
+                is Number -> value.toString()
+                else -> value.toString()
+            }
         }
 
         private fun normalizeText(value: String): String {

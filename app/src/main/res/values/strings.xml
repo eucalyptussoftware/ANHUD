@@ -414,4 +414,20 @@
     <string name="guide_editor_container_size_body">Доступно для контейнера: ширина и высота проекции.</string>
     <string name="guide_editor_show_others_title">Показывать остальные блоки</string>
     <string name="guide_editor_show_others_body">Помогает выравнивать элементы относительно других.</string>
+    <string name="lanes_block_label">Полосы движения</string>
+    <string name="battery_soc_block_label">Блок заряда батареи</string>
+    <string name="battery_soc_label">Уровень заряда батареи</string>
+    <string name="battery_soc_preview">--%</string>
+    <string name="engine_power_block_label">Блок мощности</string>
+    <string name="engine_power_label">Мощность</string>
+    <string name="engine_power_preview">-- kW</string>
+    <string name="engine_power_watts_format">%1$d W</string>
+    <string name="engine_rpm_block_label">Блок оборотов двигателя</string>
+    <string name="engine_rpm_format">%1$s rpm</string>
+    <string name="engine_rpm_label">Обороты двигателя</string>
+    <string name="engine_rpm_preview">---- rpm</string>
+    <string name="fuel_level_block_label">Блок уровня топлива</string>
+    <string name="fuel_level_format">%1$s%%</string>
+    <string name="fuel_level_label">Уровень топлива</string>
+    <string name="fuel_level_preview">--%</string>
 </resources>

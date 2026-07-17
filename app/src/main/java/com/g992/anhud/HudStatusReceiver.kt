@@ -33,6 +33,9 @@ class HudStatusReceiver : BroadcastReceiver() {
         val clockEnabled = parseBooleanExtra(intent, EXTRA_CLOCK_ENABLED)
         val batteryEnabled = parseBooleanExtra(intent, EXTRA_BATTERY_ENABLED)
         val powerEnabled = parseBooleanExtra(intent, EXTRA_POWER_ENABLED)
+        val lanesEnabled = parseBooleanExtra(intent, EXTRA_LANES_ENABLED)
+        val rpmEnabled = parseBooleanExtra(intent, EXTRA_RPM_ENABLED)
+        val fuelEnabled = parseBooleanExtra(intent, EXTRA_FUEL_ENABLED)
         val mapEnabled = parseBooleanExtra(intent, EXTRA_MAP_ENABLED)
         val hudAlertSource = parseHudAlertSource(intent, EXTRA_HUD_ALERT_SOURCE)
 
@@ -99,6 +102,15 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (powerEnabled != null) {
             OverlayPrefs.setPowerEnabled(context, powerEnabled)
         }
+        if (lanesEnabled != null) {
+            OverlayPrefs.setLanesEnabled(context, lanesEnabled)
+        }
+        if (rpmEnabled != null) {
+            OverlayPrefs.setRpmEnabled(context, rpmEnabled)
+        }
+        if (fuelEnabled != null) {
+            OverlayPrefs.setFuelEnabled(context, fuelEnabled)
+        }
         if (clockEnabled != null) {
             OverlayPrefs.setClockEnabled(context, clockEnabled)
         }
@@ -124,6 +136,9 @@ class HudStatusReceiver : BroadcastReceiver() {
             clockEnabled != null ||
             batteryEnabled != null ||
             powerEnabled != null ||
+            lanesEnabled != null ||
+            rpmEnabled != null ||
+            fuelEnabled != null ||
             mapEnabled != null ||
             hudAlertSource != null
         if (!shouldBroadcast) {
@@ -131,23 +146,26 @@ class HudStatusReceiver : BroadcastReceiver() {
         }
 
         sendOverlayRefresh(
-            context,
-            navEnabled,
-            laneGuidanceEnabled,
-            arrowEnabled,
-            speedEnabled,
-            hudSpeedEnabled,
-            roadCameraEnabled,
-            trafficLightEnabled,
-            speedLimitAlertEnabled,
-            speedLimitAlertThreshold,
-            speedometerEnabled,
-            turnSignalsEnabled,
-            clockEnabled,
-            batteryEnabled,
-            powerEnabled,
-            mapEnabled,
-            hudAlertSource
+            context = context,
+            navEnabled = navEnabled,
+            laneGuidanceEnabled = laneGuidanceEnabled,
+            arrowEnabled = arrowEnabled,
+            speedEnabled = speedEnabled,
+            hudSpeedEnabled = hudSpeedEnabled,
+            roadCameraEnabled = roadCameraEnabled,
+            trafficLightEnabled = trafficLightEnabled,
+            speedLimitAlertEnabled = speedLimitAlertEnabled,
+            speedLimitAlertThreshold = speedLimitAlertThreshold,
+            speedometerEnabled = speedometerEnabled,
+            turnSignalsEnabled = turnSignalsEnabled,
+            clockEnabled = clockEnabled,
+            batteryEnabled = batteryEnabled,
+            powerEnabled = powerEnabled,
+            lanesEnabled = lanesEnabled,
+            rpmEnabled = rpmEnabled,
+            fuelEnabled = fuelEnabled,
+            mapEnabled = mapEnabled,
+            hudAlertSource = hudAlertSource
         )
         if (effectiveEnabled == true) {
             ContextCompat.startForegroundService(
@@ -205,6 +223,9 @@ class HudStatusReceiver : BroadcastReceiver() {
         turnSignalsEnabled: Boolean?,
         batteryEnabled: Boolean?,
         powerEnabled: Boolean?,
+        lanesEnabled: Boolean? = null,
+        rpmEnabled: Boolean? = null,
+        fuelEnabled: Boolean? = null,
         clockEnabled: Boolean?,
         mapEnabled: Boolean?,
         hudAlertSource: OverlayPrefs.HudAlertSource?
@@ -259,6 +280,15 @@ class HudStatusReceiver : BroadcastReceiver() {
         if (powerEnabled != null) {
             updateIntent.putExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED, powerEnabled)
         }
+        if (lanesEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_LANES_ENABLED, lanesEnabled)
+        }
+        if (rpmEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_RPM_ENABLED, rpmEnabled)
+        }
+        if (fuelEnabled != null) {
+            updateIntent.putExtra(OverlayBroadcasts.EXTRA_FUEL_ENABLED, fuelEnabled)
+        }
         updateIntent.putExtra(
             OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
             OverlayPrefs.infoMirrorStarsheep7Enabled(context)
@@ -278,6 +308,9 @@ class HudStatusReceiver : BroadcastReceiver() {
         val turnSignalsPos = OverlayPrefs.turnSignalsPositionDp(context)
         val clockPos = OverlayPrefs.clockPositionDp(context)
         val containerPos = OverlayPrefs.containerPositionDp(context)
+        val lanesPos = OverlayPrefs.lanesPositionDp(context)
+        val rpmPos = OverlayPrefs.rpmPositionDp(context)
+        val fuelPos = OverlayPrefs.fuelPositionDp(context)
         val containerSize = OverlayPrefs.containerSizeDp(context)
         val updateIntent = Intent(OverlayBroadcasts.ACTION_OVERLAY_SETTINGS_CHANGED)
             .setPackage(context.packageName)
@@ -304,12 +337,18 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_Y_DP, roadCameraPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_X_DP, trafficLightPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_Y_DP, trafficLightPos.y)
+            .putExtra(OverlayBroadcasts.EXTRA_LANES_X_DP, lanesPos.x)
+            .putExtra(OverlayBroadcasts.EXTRA_LANES_Y_DP, lanesPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_X_DP, speedometerPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_Y_DP, speedometerPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_X_DP, turnSignalsPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_Y_DP, turnSignalsPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_CLOCK_X_DP, clockPos.x)
             .putExtra(OverlayBroadcasts.EXTRA_CLOCK_Y_DP, clockPos.y)
+            .putExtra(OverlayBroadcasts.EXTRA_RPM_X_DP, rpmPos.x)
+            .putExtra(OverlayBroadcasts.EXTRA_RPM_Y_DP, rpmPos.y)
+            .putExtra(OverlayBroadcasts.EXTRA_FUEL_X_DP, fuelPos.x)
+            .putExtra(OverlayBroadcasts.EXTRA_FUEL_Y_DP, fuelPos.y)
             .putExtra(OverlayBroadcasts.EXTRA_NAV_SCALE, OverlayPrefs.navScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_NAV_TEXT_SCALE, OverlayPrefs.navTextScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_ARROW_SCALE, OverlayPrefs.arrowScale(context))
@@ -319,6 +358,9 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_STRELKA_SCALE, OverlayPrefs.strelkaScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_SCALE, OverlayPrefs.roadCameraScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_SCALE, OverlayPrefs.trafficLightScale(context))
+            .putExtra(OverlayBroadcasts.EXTRA_LANES_SCALE, OverlayPrefs.lanesScale(context))
+            .putExtra(OverlayBroadcasts.EXTRA_RPM_SCALE, OverlayPrefs.rpmScale(context))
+            .putExtra(OverlayBroadcasts.EXTRA_FUEL_SCALE, OverlayPrefs.fuelScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_SCALE, OverlayPrefs.speedometerScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_SCALE, OverlayPrefs.turnSignalsScale(context))
             .putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_SPACING_DP, OverlayPrefs.turnSignalsSpacingDp(context))
@@ -333,6 +375,9 @@ class HudStatusReceiver : BroadcastReceiver() {
             .putExtra(OverlayBroadcasts.EXTRA_HUDSPEED_ALPHA, OverlayPrefs.hudSpeedAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_STRELKA_ALPHA, OverlayPrefs.strelkaAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_ROAD_CAMERA_ALPHA, OverlayPrefs.roadCameraAlpha(context))
+            .putExtra(OverlayBroadcasts.EXTRA_LANES_ALPHA, OverlayPrefs.lanesAlpha(context))
+            .putExtra(OverlayBroadcasts.EXTRA_RPM_ALPHA, OverlayPrefs.rpmAlpha(context))
+            .putExtra(OverlayBroadcasts.EXTRA_FUEL_ALPHA, OverlayPrefs.fuelAlpha(context))
             .putExtra(OverlayBroadcasts.EXTRA_BATTERY_X_DP, OverlayPrefs.batteryPositionDp(context).x)
             .putExtra(OverlayBroadcasts.EXTRA_BATTERY_Y_DP, OverlayPrefs.batteryPositionDp(context).y)
             .putExtra(OverlayBroadcasts.EXTRA_POWER_X_DP, OverlayPrefs.powerPositionDp(context).x)
@@ -384,6 +429,9 @@ class HudStatusReceiver : BroadcastReceiver() {
                 OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_MAX_ACTIVE,
                 OverlayPrefs.trafficLightMaxActive(context)
             )
+            .putExtra(OverlayBroadcasts.EXTRA_LANES_ENABLED, OverlayPrefs.lanesEnabled(context))
+            .putExtra(OverlayBroadcasts.EXTRA_RPM_ENABLED, OverlayPrefs.rpmEnabled(context))
+            .putExtra(OverlayBroadcasts.EXTRA_FUEL_ENABLED, OverlayPrefs.fuelEnabled(context))
             .putExtra(OverlayBroadcasts.EXTRA_MAP_ENABLED, OverlayPrefs.mapEnabled(context))
             .putExtra(
                 OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
@@ -495,6 +543,9 @@ class HudStatusReceiver : BroadcastReceiver() {
         const val EXTRA_SPEED_LIMIT_ALERT_THRESHOLD = "SPEED_ALERT_THRESHOLD"
         const val EXTRA_SPEEDOMETER_ENABLED = "SPEEDOMETER"
         const val EXTRA_TURN_SIGNALS_ENABLED = "TURN_SIGNALS"
+        const val EXTRA_LANES_ENABLED = "LANES"
+        const val EXTRA_RPM_ENABLED = "RPM"
+        const val EXTRA_FUEL_ENABLED = "FUEL"
         const val EXTRA_BATTERY_ENABLED = "BATTERY"
         const val EXTRA_POWER_ENABLED = "POWER"
         const val EXTRA_CLOCK_ENABLED = "CLOCK"

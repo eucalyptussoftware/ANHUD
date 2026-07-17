@@ -229,6 +229,11 @@ object PrefsJson {
         val speedometerPos = OverlayPrefs.speedometerPositionDp(context)
         val turnSignalsPos = OverlayPrefs.turnSignalsPositionDp(context)
         val clockPos = OverlayPrefs.clockPositionDp(context)
+        val batteryPos = OverlayPrefs.batteryPositionDp(context)
+        val powerPos = OverlayPrefs.powerPositionDp(context)
+        val lanesPos = OverlayPrefs.lanesPositionDp(context)
+        val rpmPos = OverlayPrefs.rpmPositionDp(context)
+        val fuelPos = OverlayPrefs.fuelPositionDp(context)
         val customTurnSignalIcon = OverlayPrefs.turnSignalsCustomIcon(context)
 
         putBoolean("overlay_enabled", OverlayPrefs.isEnabled(context))
@@ -363,6 +368,36 @@ object PrefsJson {
         putInt("hide_turn_dynamic_60_to_100_meters", dynamicHideTurnDistances.from60To100Kmh)
         putInt("hide_turn_dynamic_100_plus_meters", dynamicHideTurnDistances.from100Kmh)
         putBoolean("guide_shown", OverlayPrefs.guideShown(context))
+
+        putFloat("overlay_battery_x_dp", batteryPos.x)
+        putFloat("overlay_battery_y_dp", batteryPos.y)
+        putFloat("overlay_battery_scale", OverlayPrefs.batteryScale(context))
+        putFloat("overlay_battery_alpha", OverlayPrefs.batteryAlpha(context))
+        putBoolean("overlay_battery_enabled", OverlayPrefs.batteryEnabled(context))
+
+        putFloat("overlay_power_x_dp", powerPos.x)
+        putFloat("overlay_power_y_dp", powerPos.y)
+        putFloat("overlay_power_scale", OverlayPrefs.powerScale(context))
+        putFloat("overlay_power_alpha", OverlayPrefs.powerAlpha(context))
+        putBoolean("overlay_power_enabled", OverlayPrefs.powerEnabled(context))
+
+        putFloat("overlay_lanes_x_dp", lanesPos.x)
+        putFloat("overlay_lanes_y_dp", lanesPos.y)
+        putFloat("overlay_lanes_scale", OverlayPrefs.lanesScale(context))
+        putFloat("overlay_lanes_alpha", OverlayPrefs.lanesAlpha(context))
+        putBoolean("overlay_lanes_enabled", OverlayPrefs.lanesEnabled(context))
+
+        putFloat("overlay_rpm_x_dp", rpmPos.x)
+        putFloat("overlay_rpm_y_dp", rpmPos.y)
+        putFloat("overlay_rpm_scale", OverlayPrefs.rpmScale(context))
+        putFloat("overlay_rpm_alpha", OverlayPrefs.rpmAlpha(context))
+        putBoolean("overlay_rpm_enabled", OverlayPrefs.rpmEnabled(context))
+
+        putFloat("overlay_fuel_x_dp", fuelPos.x)
+        putFloat("overlay_fuel_y_dp", fuelPos.y)
+        putFloat("overlay_fuel_scale", OverlayPrefs.fuelScale(context))
+        putFloat("overlay_fuel_alpha", OverlayPrefs.fuelAlpha(context))
+        putBoolean("overlay_fuel_enabled", OverlayPrefs.fuelEnabled(context))
 
         return items
     }

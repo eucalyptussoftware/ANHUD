@@ -2,6 +2,11 @@ package com.g992.anhud
 
 import android.graphics.Bitmap
 
+data class LaneInfo(
+    val directions: List<Int>,
+    val highlighted: Boolean
+)
+
 data class TrafficLightInfo(
     val id: Int,
     val color: String,
@@ -62,7 +67,10 @@ data class NavigationHudState(
     val turnSignalRight: Boolean = false,
     val turnSignalHazard: Boolean = false,
     val batterySoc: Int? = null,
-    val enginePower: Float? = null
+    val enginePower: Float? = null,
+    val engineRpm: Int? = null,
+    val fuelLevel: Int? = null,
+    val lanes: List<LaneInfo> = emptyList()
 ) {
     fun isEmpty(): Boolean {
         return primaryText.isBlank() &&
@@ -84,7 +92,10 @@ data class NavigationHudState(
             !turnSignalRight &&
             !turnSignalHazard &&
             batterySoc == null &&
-            enginePower == null
+            enginePower == null &&
+            engineRpm == null &&
+            fuelLevel == null &&
+            lanes.isEmpty()
     }
 }
 

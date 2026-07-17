@@ -6,6 +6,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -16,6 +18,7 @@ import android.os.Looper
 import android.os.Parcel
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import android.util.Log
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -30,6 +33,17 @@ class SensorDataService : Service() {
     private var carProxyConnection: ServiceConnection? = null
     private var lastTurnSignalRaw: Int? = null
     private var speedSensorClient: EcarxSpeedSensorClient? = null
+    private var lastWidgetExtras: Map<String, Any?> = emptyMap()
+
+    private val vehicleDataReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val action = intent.action ?: return
+            if (action == "com.geely.seatwidget.ACTION_UPDATE") {
+                handleWidgetUpdate(intent)
+            }
+        }
+    }
+
 
     private val staleSpeedHandler = Handler(Looper.getMainLooper())
     private val staleSpeedRunnable = object : Runnable {
@@ -62,6 +76,15 @@ class SensorDataService : Service() {
         )
         staleSpeedHandler.postDelayed(staleSpeedRunnable, GPS_STALE_CHECK_INTERVAL_MS)
         initTurnSignalIntegration()
+        val vehicleFilter = IntentFilter().apply {
+            addAction("com.geely.seatwidget.ACTION_UPDATE")
+        }
+        ContextCompat.registerReceiver(
+            this,
+            vehicleDataReceiver,
+            vehicleFilter,
+            ContextCompat.RECEIVER_EXPORTED
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -83,6 +106,9 @@ class SensorDataService : Service() {
         clearTurnSignalState()
         resetVehicleSpeedWatchdog()
         stopLocationUpdates()
+        try {
+            unregisterReceiver(vehicleDataReceiver)
+        } catch (_: Exception) {}
         super.onDestroy()
     }
 
@@ -482,6 +508,73 @@ class SensorDataService : Service() {
         )
     }
 
+    private fun handleWidgetUpdate(intent: Intent) {
+        val extras = intent.extras
+        if (extras != null && !extras.isEmpty) {
+            val currentMap = LinkedHashMap<String, Any?>()
+            val diffs = ArrayList<String>()
+            val keySet = extras.keySet()
+            for (key in keySet) {
+                val value = extras.get(key)
+                currentMap[key] = value
+                if (lastWidgetExtras.containsKey(key)) {
+                    val oldValue = lastWidgetExtras[key]
+                    if (oldValue != value) {
+                        diffs.add("$key: $oldValue -> $value")
+                    }
+                } else {
+                    diffs.add("$key: NEW -> $value")
+                }
+            }
+            if (diffs.isNotEmpty()) {
+                val diffText = diffs.joinToString(", ")
+                UiLogStore.append(LogCategory.SENSORS, "WIDGET CHANGE: $diffText")
+                Log.i("SensorDataService", "Widget Diffs: $diffText")
+            }
+            lastWidgetExtras = currentMap
+        }
+        val soc = readIntExtraAllowZero(intent, EXTRA_WIDGET_SOC)
+        val rpm = readIntExtraAllowZero(intent, "RPM")
+        var fuel = readIntExtraAllowZero(intent, "FUEL")
+        if (fuel == null) {
+            fuel = readIntExtraAllowZero(intent, "FUEL_LEVEL")
+        }
+        if (fuel == null) {
+            fuel = readIntExtraAllowZero(intent, "fuel_level")
+        }
+        if (fuel == null) {
+            fuel = readIntExtraAllowZero(intent, "REMAINING_FUEL")
+        }
+        val power = readFloatExtra(intent, "POWER")
+
+        NavigationHudStore.update { current ->
+            current.copy(
+                batterySoc = soc ?: current.batterySoc,
+                engineRpm = rpm ?: current.engineRpm,
+                fuelLevel = fuel ?: current.fuelLevel,
+                enginePower = power ?: current.enginePower
+            )
+        }
+        if (soc == null && rpm == null && fuel == null && power == null) {
+            return
+        }
+        UiLogStore.append(LogCategory.SENSORS, "Widget update: SOC=$soc%, RPM=$rpm, Fuel=$fuel L, Power=$power kW")
+    }
+
+    private fun readFloatExtra(intent: Intent, key: String): Float? {
+        val extras = intent.extras ?: return null
+        if (!extras.containsKey(key)) return null
+        val raw = extras.get(key)
+        return when (raw) {
+            is Float -> raw
+            is Double -> raw.toFloat()
+            is Number -> raw.toFloat()
+            is String -> raw.toFloatOrNull()
+            is Boolean -> if (raw) 1.0f else 0.0f
+            else -> raw?.toString()?.toFloatOrNull()
+        }
+    }
+
     private data class GpsWindowStats(
         val speedKmh: Float,
         val distanceMeters: Float,
@@ -497,6 +590,7 @@ class SensorDataService : Service() {
     )
 
     companion object {
+        private const val EXTRA_WIDGET_SOC = "SOC"
         private const val SENSOR_ID_CAR_SPEED = 1055232
         private const val CAR_PROXY_PACKAGE = "com.autolink.carproxyservice"
         private const val CAR_PROXY_SERVICE = "com.autolink.carproxyservice.CarProxyService"

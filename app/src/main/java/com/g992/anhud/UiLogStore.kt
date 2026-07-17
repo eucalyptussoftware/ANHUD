@@ -62,7 +62,7 @@ object UiLogStore {
         }
     }
 
-    private fun snapshot(category: LogCategory): List<String> {
+    fun snapshot(category: LogCategory): List<String> {
         synchronized(lock) {
             return logs.getValue(category).toList()
         }

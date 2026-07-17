@@ -137,6 +137,11 @@ class MainActivity : ScaledActivity() {
     internal lateinit var turnSignalsCardPreviewRight: ImageView
     internal lateinit var turnSignalsIconValue: TextView
     private lateinit var positionClockCard: View
+    private lateinit var positionLanesCard: View
+    private lateinit var positionBatteryCard: View
+    private lateinit var positionRpmCard: View
+    private lateinit var positionFuelCard: View
+    private lateinit var positionPowerCard: View
     internal lateinit var navProjectionSwitch: SwitchCompat
     internal lateinit var laneGuidanceProjectionSwitch: SwitchCompat
     internal lateinit var mapProjectionSwitch: SwitchCompat
@@ -148,6 +153,11 @@ class MainActivity : ScaledActivity() {
     internal lateinit var speedometerProjectionSwitch: SwitchCompat
     internal lateinit var turnSignalsProjectionSwitch: SwitchCompat
     internal lateinit var clockProjectionSwitch: SwitchCompat
+    internal lateinit var lanesProjectionSwitch: SwitchCompat
+    internal lateinit var batteryProjectionSwitch: SwitchCompat
+    internal lateinit var rpmProjectionSwitch: SwitchCompat
+    internal lateinit var fuelProjectionSwitch: SwitchCompat
+    internal lateinit var powerProjectionSwitch: SwitchCompat
     internal lateinit var speedometerShowUnitTextCheck: CheckBox
     internal lateinit var speedLimitFromHudSpeedCheck: CheckBox
     internal lateinit var arrowOnlyWhenNoIconCheck: CheckBox
@@ -243,6 +253,11 @@ class MainActivity : ScaledActivity() {
         turnSignalsCardPreviewRight = findViewById(R.id.turnSignalsCardPreviewRight)
         turnSignalsIconValue = findViewById(R.id.turnSignalsIconValue)
         positionClockCard = findViewById(R.id.positionClockCard)
+        positionLanesCard = findViewById(R.id.positionLanesCard)
+        positionBatteryCard = findViewById(R.id.positionBatteryCard)
+        positionRpmCard = findViewById(R.id.positionRpmCard)
+        positionFuelCard = findViewById(R.id.positionFuelCard)
+        positionPowerCard = findViewById(R.id.positionPowerCard)
         navProjectionSwitch = findViewById(R.id.navProjectionSwitch)
         laneGuidanceProjectionSwitch = findViewById(R.id.laneGuidanceProjectionSwitch)
         mapProjectionSwitch = findViewById(R.id.mapProjectionSwitch)
@@ -254,6 +269,11 @@ class MainActivity : ScaledActivity() {
         speedometerProjectionSwitch = findViewById(R.id.speedometerProjectionSwitch)
         turnSignalsProjectionSwitch = findViewById(R.id.turnSignalsProjectionSwitch)
         clockProjectionSwitch = findViewById(R.id.clockProjectionSwitch)
+        lanesProjectionSwitch = findViewById(R.id.lanesProjectionSwitch)
+        batteryProjectionSwitch = findViewById(R.id.batteryProjectionSwitch)
+        rpmProjectionSwitch = findViewById(R.id.rpmProjectionSwitch)
+        fuelProjectionSwitch = findViewById(R.id.fuelProjectionSwitch)
+        powerProjectionSwitch = findViewById(R.id.powerProjectionSwitch)
         speedometerShowUnitTextCheck = findViewById(R.id.speedometerShowUnitTextCheck)
         speedLimitFromHudSpeedCheck = findViewById(R.id.speedLimitFromHudSpeedCheck)
         arrowOnlyWhenNoIconCheck = findViewById(R.id.arrowOnlyWhenNoIconCheck)
@@ -387,6 +407,21 @@ class MainActivity : ScaledActivity() {
         positionClockCard.setOnClickListener {
             openPositionDialog(OverlayTarget.CLOCK)
         }
+        positionLanesCard.setOnClickListener {
+            openPositionDialog(OverlayTarget.LANES)
+        }
+        positionBatteryCard.setOnClickListener {
+            openPositionDialog(OverlayTarget.BATTERY)
+        }
+        positionRpmCard.setOnClickListener {
+            openPositionDialog(OverlayTarget.RPM)
+        }
+        positionFuelCard.setOnClickListener {
+            openPositionDialog(OverlayTarget.FUEL)
+        }
+        positionPowerCard.setOnClickListener {
+            openPositionDialog(OverlayTarget.POWER)
+        }
         positionContainerCard.setOnClickListener {
             openPositionDialog(OverlayTarget.CONTAINER)
         }
@@ -482,6 +517,41 @@ class MainActivity : ScaledActivity() {
             }
             OverlayPrefs.setClockEnabled(this, isChecked)
             notifyOverlaySettingsChanged(clockEnabled = isChecked)
+        }
+        lanesProjectionSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) {
+                return@setOnCheckedChangeListener
+            }
+            OverlayPrefs.setLanesEnabled(this, isChecked)
+            notifyOverlaySettingsChanged(lanesEnabled = isChecked)
+        }
+        batteryProjectionSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) {
+                return@setOnCheckedChangeListener
+            }
+            OverlayPrefs.setBatteryEnabled(this, isChecked)
+            notifyOverlaySettingsChanged(batteryEnabled = isChecked)
+        }
+        rpmProjectionSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) {
+                return@setOnCheckedChangeListener
+            }
+            OverlayPrefs.setRpmEnabled(this, isChecked)
+            notifyOverlaySettingsChanged(rpmEnabled = isChecked)
+        }
+        fuelProjectionSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) {
+                return@setOnCheckedChangeListener
+            }
+            OverlayPrefs.setFuelEnabled(this, isChecked)
+            notifyOverlaySettingsChanged(fuelEnabled = isChecked)
+        }
+        powerProjectionSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) {
+                return@setOnCheckedChangeListener
+            }
+            OverlayPrefs.setPowerEnabled(this, isChecked)
+            notifyOverlaySettingsChanged(powerEnabled = isChecked)
         }
         speedLimitFromHudSpeedCheck.setOnCheckedChangeListener { _, isChecked ->
             if (isSyncingUi) {
@@ -900,6 +970,11 @@ class MainActivity : ScaledActivity() {
         turnSignalsPosition: PointF? = null,
         turnSignalsIconStyle: Int? = null,
         clockPosition: PointF? = null,
+        batteryPosition: PointF? = null,
+        powerPosition: PointF? = null,
+        lanesPosition: PointF? = null,
+        rpmPosition: PointF? = null,
+        fuelPosition: PointF? = null,
         navScale: Float? = null,
         laneGuidanceScale: Float? = null,
         navTextScale: Float? = null,
@@ -914,6 +989,11 @@ class MainActivity : ScaledActivity() {
         turnSignalsScale: Float? = null,
         turnSignalsSpacingDp: Float? = null,
         clockScale: Float? = null,
+        batteryScale: Float? = null,
+        powerScale: Float? = null,
+        lanesScale: Float? = null,
+        rpmScale: Float? = null,
+        fuelScale: Float? = null,
         navAlpha: Float? = null,
         laneGuidanceAlpha: Float? = null,
         arrowAlpha: Float? = null,
@@ -927,6 +1007,11 @@ class MainActivity : ScaledActivity() {
         clockAlpha: Float? = null,
         containerAlpha: Float? = null,
         mapAlpha: Float? = null,
+        batteryAlpha: Float? = null,
+        powerAlpha: Float? = null,
+        lanesAlpha: Float? = null,
+        rpmAlpha: Float? = null,
+        fuelAlpha: Float? = null,
         navEnabled: Boolean? = null,
         laneGuidanceEnabled: Boolean? = null,
         arrowEnabled: Boolean? = null,
@@ -944,6 +1029,11 @@ class MainActivity : ScaledActivity() {
         speedometerShowUnitText: Boolean? = null,
         turnSignalsEnabled: Boolean? = null,
         clockEnabled: Boolean? = null,
+        batteryEnabled: Boolean? = null,
+        powerEnabled: Boolean? = null,
+        lanesEnabled: Boolean? = null,
+        rpmEnabled: Boolean? = null,
+        fuelEnabled: Boolean? = null,
         trafficLightMaxActive: Int? = null,
         mapEnabled: Boolean? = null,
         preview: Boolean = false,
@@ -1170,6 +1260,71 @@ class MainActivity : ScaledActivity() {
             OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7,
             OverlayPrefs.infoMirrorStarsheep7Enabled(this)
         )
+        if (batteryPosition != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_BATTERY_X_DP, batteryPosition.x)
+            intent.putExtra(OverlayBroadcasts.EXTRA_BATTERY_Y_DP, batteryPosition.y)
+        }
+        if (powerPosition != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_POWER_X_DP, powerPosition.x)
+            intent.putExtra(OverlayBroadcasts.EXTRA_POWER_Y_DP, powerPosition.y)
+        }
+        if (lanesPosition != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_LANES_X_DP, lanesPosition.x)
+            intent.putExtra(OverlayBroadcasts.EXTRA_LANES_Y_DP, lanesPosition.y)
+        }
+        if (rpmPosition != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_RPM_X_DP, rpmPosition.x)
+            intent.putExtra(OverlayBroadcasts.EXTRA_RPM_Y_DP, rpmPosition.y)
+        }
+        if (fuelPosition != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_X_DP, fuelPosition.x)
+            intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_Y_DP, fuelPosition.y)
+        }
+        if (batteryScale != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_BATTERY_SCALE, batteryScale)
+        }
+        if (powerScale != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_POWER_SCALE, powerScale)
+        }
+        if (lanesScale != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_LANES_SCALE, lanesScale)
+        }
+        if (rpmScale != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_RPM_SCALE, rpmScale)
+        }
+        if (fuelScale != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_SCALE, fuelScale)
+        }
+        if (batteryAlpha != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_BATTERY_ALPHA, batteryAlpha)
+        }
+        if (powerAlpha != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_POWER_ALPHA, powerAlpha)
+        }
+        if (lanesAlpha != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_LANES_ALPHA, lanesAlpha)
+        }
+        if (rpmAlpha != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_RPM_ALPHA, rpmAlpha)
+        }
+        if (fuelAlpha != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_ALPHA, fuelAlpha)
+        }
+        if (batteryEnabled != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_BATTERY_ENABLED, batteryEnabled)
+        }
+        if (powerEnabled != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED, powerEnabled)
+        }
+        if (lanesEnabled != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_LANES_ENABLED, lanesEnabled)
+        }
+        if (rpmEnabled != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_RPM_ENABLED, rpmEnabled)
+        }
+        if (fuelEnabled != null) {
+            intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_ENABLED, fuelEnabled)
+        }
         intent.putExtra(OverlayBroadcasts.EXTRA_PREVIEW, preview)
         if (previewTarget != null) {
             intent.putExtra(OverlayBroadcasts.EXTRA_PREVIEW_TARGET, previewTarget.previewKey)

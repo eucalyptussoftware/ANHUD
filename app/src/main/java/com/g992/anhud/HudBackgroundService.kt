@@ -55,6 +55,16 @@ class HudBackgroundService : Service() {
                 val clockY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CLOCK_Y_DP, Float.NaN)
                 val containerX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CONTAINER_X_DP, Float.NaN)
                 val containerY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CONTAINER_Y_DP, Float.NaN)
+                val batteryX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_BATTERY_X_DP, Float.NaN)
+                val batteryY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_BATTERY_Y_DP, Float.NaN)
+                val powerX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_POWER_X_DP, Float.NaN)
+                val powerY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_POWER_Y_DP, Float.NaN)
+                val lanesX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_LANES_X_DP, Float.NaN)
+                val lanesY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_LANES_Y_DP, Float.NaN)
+                val rpmX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_RPM_X_DP, Float.NaN)
+                val rpmY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_RPM_Y_DP, Float.NaN)
+                val fuelX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_FUEL_X_DP, Float.NaN)
+                val fuelY = intent.getFloatExtra(OverlayBroadcasts.EXTRA_FUEL_Y_DP, Float.NaN)
                 val containerWidth = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CONTAINER_WIDTH_DP, Float.NaN)
                 val containerHeight = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CONTAINER_HEIGHT_DP, Float.NaN)
                 val mapX = intent.getFloatExtra(OverlayBroadcasts.EXTRA_MAP_X_DP, Float.NaN)
@@ -83,6 +93,11 @@ class HudBackgroundService : Service() {
                     null
                 }
                 val clockScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CLOCK_SCALE, Float.NaN)
+                val batteryScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_BATTERY_SCALE, Float.NaN)
+                val powerScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_POWER_SCALE, Float.NaN)
+                val lanesScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_LANES_SCALE, Float.NaN)
+                val rpmScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_RPM_SCALE, Float.NaN)
+                val fuelScale = intent.getFloatExtra(OverlayBroadcasts.EXTRA_FUEL_SCALE, Float.NaN)
                 val navAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_NAV_ALPHA, Float.NaN)
                 val laneGuidanceAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_LANE_GUIDANCE_ALPHA, Float.NaN)
                 val arrowAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_ARROW_ALPHA, Float.NaN)
@@ -94,6 +109,11 @@ class HudBackgroundService : Service() {
                 val speedometerAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ALPHA, Float.NaN)
                 val turnSignalsAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_ALPHA, Float.NaN)
                 val clockAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CLOCK_ALPHA, Float.NaN)
+                val batteryAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_BATTERY_ALPHA, Float.NaN)
+                val powerAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_POWER_ALPHA, Float.NaN)
+                val lanesAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_LANES_ALPHA, Float.NaN)
+                val rpmAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_RPM_ALPHA, Float.NaN)
+                val fuelAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_FUEL_ALPHA, Float.NaN)
                 val containerAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_CONTAINER_ALPHA, Float.NaN)
                 val mapAlpha = intent.getFloatExtra(OverlayBroadcasts.EXTRA_MAP_ALPHA, Float.NaN)
                 val navEnabled = if (intent.hasExtra(OverlayBroadcasts.EXTRA_NAV_ENABLED)) {
@@ -193,6 +213,31 @@ class HudBackgroundService : Service() {
                 } else {
                     null
                 }
+                val batteryEnabled = if (intent.hasExtra(OverlayBroadcasts.EXTRA_BATTERY_ENABLED)) {
+                    intent.getBooleanExtra(OverlayBroadcasts.EXTRA_BATTERY_ENABLED, true)
+                } else {
+                    null
+                }
+                val powerEnabled = if (intent.hasExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED)) {
+                    intent.getBooleanExtra(OverlayBroadcasts.EXTRA_POWER_ENABLED, true)
+                } else {
+                    null
+                }
+                val lanesEnabled = if (intent.hasExtra(OverlayBroadcasts.EXTRA_LANES_ENABLED)) {
+                    intent.getBooleanExtra(OverlayBroadcasts.EXTRA_LANES_ENABLED, true)
+                } else {
+                    null
+                }
+                val rpmEnabled = if (intent.hasExtra(OverlayBroadcasts.EXTRA_RPM_ENABLED)) {
+                    intent.getBooleanExtra(OverlayBroadcasts.EXTRA_RPM_ENABLED, true)
+                } else {
+                    null
+                }
+                val fuelEnabled = if (intent.hasExtra(OverlayBroadcasts.EXTRA_FUEL_ENABLED)) {
+                    intent.getBooleanExtra(OverlayBroadcasts.EXTRA_FUEL_ENABLED, true)
+                } else {
+                    null
+                }
                 val infoMirrorStarsheep7 = if (intent.hasExtra(OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7)) {
                     intent.getBooleanExtra(OverlayBroadcasts.EXTRA_INFO_MIRROR_STARSHEEP7, false)
                 } else {
@@ -271,6 +316,67 @@ class HudBackgroundService : Service() {
                 } else {
                     null
                 }
+                val lanesPosition = if (!lanesX.isNaN() && !lanesY.isNaN()) {
+                    android.graphics.PointF(lanesX, lanesY)
+                } else {
+                    null
+                }
+                val batteryPosition = if (!batteryX.isNaN() && !batteryY.isNaN()) {
+                    android.graphics.PointF(batteryX, batteryY)
+                } else {
+                    null
+                }
+                val rpmPosition = if (!rpmX.isNaN() && !rpmY.isNaN()) {
+                    android.graphics.PointF(rpmX, rpmY)
+                } else {
+                    null
+                }
+                val fuelPosition = if (!fuelX.isNaN() && !fuelY.isNaN()) {
+                    android.graphics.PointF(fuelX, fuelY)
+                } else {
+                    null
+                }
+                val powerPosition = if (!powerX.isNaN() && !powerY.isNaN()) {
+                    android.graphics.PointF(powerX, powerY)
+                } else {
+                    null
+                }
+
+                val lanesScaleValue = lanesScale.takeIf { !it.isNaN() }
+                val batteryScaleValue = batteryScale.takeIf { !it.isNaN() }
+                val rpmScaleValue = rpmScale.takeIf { !it.isNaN() }
+                val fuelScaleValue = fuelScale.takeIf { !it.isNaN() }
+                val powerScaleValue = powerScale.takeIf { !it.isNaN() }
+
+                val lanesAlphaValue = lanesAlpha.takeIf { !it.isNaN() }
+                val batteryAlphaValue = batteryAlpha.takeIf { !it.isNaN() }
+                val rpmAlphaValue = rpmAlpha.takeIf { !it.isNaN() }
+                val fuelAlphaValue = fuelAlpha.takeIf { !it.isNaN() }
+                val powerAlphaValue = powerAlpha.takeIf { !it.isNaN() }
+
+                val finalBatteryPosition = batteryPosition ?: OverlayPrefs.batteryPositionDp(context)
+                val finalPowerPosition = powerPosition ?: OverlayPrefs.powerPositionDp(context)
+                val finalLanesPosition = lanesPosition ?: OverlayPrefs.lanesPositionDp(context)
+                val finalRpmPosition = rpmPosition ?: OverlayPrefs.rpmPositionDp(context)
+                val finalFuelPosition = fuelPosition ?: OverlayPrefs.fuelPositionDp(context)
+
+                val finalBatteryScale = batteryScaleValue ?: OverlayPrefs.batteryScale(context)
+                val finalPowerScale = powerScaleValue ?: OverlayPrefs.powerScale(context)
+                val finalLanesScale = lanesScaleValue ?: OverlayPrefs.lanesScale(context)
+                val finalRpmScale = rpmScaleValue ?: OverlayPrefs.rpmScale(context)
+                val finalFuelScale = fuelScaleValue ?: OverlayPrefs.fuelScale(context)
+
+                val finalBatteryAlpha = batteryAlphaValue ?: OverlayPrefs.batteryAlpha(context)
+                val finalPowerAlpha = powerAlphaValue ?: OverlayPrefs.powerAlpha(context)
+                val finalLanesAlpha = lanesAlphaValue ?: OverlayPrefs.lanesAlpha(context)
+                val finalRpmAlpha = rpmAlphaValue ?: OverlayPrefs.rpmAlpha(context)
+                val finalFuelAlpha = fuelAlphaValue ?: OverlayPrefs.fuelAlpha(context)
+
+                val finalBatteryEnabled = batteryEnabled ?: OverlayPrefs.batteryEnabled(context)
+                val finalPowerEnabled = powerEnabled ?: OverlayPrefs.powerEnabled(context)
+                val finalLanesEnabled = lanesEnabled ?: OverlayPrefs.lanesEnabled(context)
+                val finalRpmEnabled = rpmEnabled ?: OverlayPrefs.rpmEnabled(context)
+                val finalFuelEnabled = fuelEnabled ?: OverlayPrefs.fuelEnabled(context)
                 val containerWidthValue = containerWidth.takeIf { !it.isNaN() }
                 val containerHeightValue = containerHeight.takeIf { !it.isNaN() }
                 val mapWidthValue = mapWidth.takeIf { !it.isNaN() }
@@ -323,8 +429,8 @@ class HudBackgroundService : Service() {
                     speedometerPosition,
                     turnSignalsPosition,
                     clockPosition,
-                    OverlayPrefs.batteryPositionDp(context),
-                    OverlayPrefs.powerPositionDp(context),
+                    finalBatteryPosition,
+                    finalPowerPosition,
                     navScaleValue,
                     laneGuidanceScaleValue,
                     navTextScaleValue,
@@ -340,8 +446,8 @@ class HudBackgroundService : Service() {
                     turnSignalsSpacingValue,
                     turnSignalsIconStyle,
                     clockScaleValue,
-                    OverlayPrefs.batteryScale(context),
-                    OverlayPrefs.powerScale(context),
+                    finalBatteryScale,
+                    finalPowerScale,
                     navAlphaValue,
                     laneGuidanceAlphaValue,
                     arrowAlphaValue,
@@ -353,8 +459,8 @@ class HudBackgroundService : Service() {
                     speedometerAlphaValue,
                     turnSignalsAlphaValue,
                     clockAlphaValue,
-                    OverlayPrefs.batteryAlpha(context),
-                    OverlayPrefs.powerAlpha(context),
+                    finalBatteryAlpha,
+                    finalPowerAlpha,
                     containerAlphaValue,
                     mapAlphaValue,
                     navEnabled,
@@ -374,14 +480,26 @@ class HudBackgroundService : Service() {
                     speedometerShowUnitText,
                     turnSignalsEnabled,
                     clockEnabled,
-                    OverlayPrefs.batteryEnabled(context),
-                    OverlayPrefs.powerEnabled(context),
+                    finalBatteryEnabled,
+                    finalPowerEnabled,
                     trafficLightMaxActive,
                     mapEnabled,
                     preview,
                     previewTarget,
                     previewShowOthers,
-                    infoMirrorStarsheep7
+                    infoMirrorStarsheep7,
+                    finalLanesPosition,
+                    finalRpmPosition,
+                    finalFuelPosition,
+                    finalLanesScale,
+                    finalRpmScale,
+                    finalFuelScale,
+                    finalLanesAlpha,
+                    finalRpmAlpha,
+                    finalFuelAlpha,
+                    finalLanesEnabled,
+                    finalRpmEnabled,
+                    finalFuelEnabled
                 )
                 overlayController.refresh()
                 overlayController.updateNavigation(NavigationHudStore.snapshot())

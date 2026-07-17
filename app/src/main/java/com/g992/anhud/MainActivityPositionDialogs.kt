@@ -22,21 +22,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-internal enum class OverlayTarget(val previewKey: String) {
-    MAP(OverlayBroadcasts.PREVIEW_TARGET_MAP),
-    NAVIGATION(OverlayBroadcasts.PREVIEW_TARGET_NAV),
-    LANE_GUIDANCE(OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE),
-    ARROW(OverlayBroadcasts.PREVIEW_TARGET_ARROW),
-    SPEED(OverlayBroadcasts.PREVIEW_TARGET_SPEED),
-    HUDSPEED(OverlayBroadcasts.PREVIEW_TARGET_HUDSPEED),
-    STRELKA(OverlayBroadcasts.PREVIEW_TARGET_STRELKA),
-    ROAD_CAMERA(OverlayBroadcasts.PREVIEW_TARGET_ROAD_CAMERA),
-    TRAFFIC_LIGHT(OverlayBroadcasts.PREVIEW_TARGET_TRAFFIC_LIGHT),
-    SPEEDOMETER(OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER),
-    TURN_SIGNALS(OverlayBroadcasts.PREVIEW_TARGET_TURN_SIGNALS),
-    CLOCK(OverlayBroadcasts.PREVIEW_TARGET_CLOCK),
-    CONTAINER(OverlayBroadcasts.PREVIEW_TARGET_CONTAINER)
-}
+
 
 internal fun MainActivity.openPositionDialog(
     target: OverlayTarget,
@@ -162,6 +148,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.TURN_SIGNALS -> (OverlayPrefs.turnSignalsScale(this) * 100).toInt()
         OverlayTarget.CLOCK -> (OverlayPrefs.clockScale(this) * 100).toInt()
         OverlayTarget.CONTAINER -> 100
+        else -> 100
     }
     val brightnessPercent = when (target) {
         OverlayTarget.MAP -> (OverlayPrefs.mapAlpha(this) * 100).toInt()
@@ -177,6 +164,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.TURN_SIGNALS -> (OverlayPrefs.turnSignalsAlpha(this) * 100).toInt()
         OverlayTarget.CLOCK -> (OverlayPrefs.clockAlpha(this) * 100).toInt()
         OverlayTarget.CONTAINER -> (OverlayPrefs.containerAlpha(this) * 100).toInt()
+        else -> 100
     }.coerceIn(0, 100)
 
     val navPrimaryBasePx = previewNavPrimary.textSize
@@ -325,6 +313,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.TURN_SIGNALS -> getString(R.string.position_turn_signals_block_label)
         OverlayTarget.CLOCK -> getString(R.string.position_clock_block_label)
         OverlayTarget.CONTAINER -> getString(R.string.position_container_label)
+        else -> ""
     }
 
     val dialog = AlertDialog.Builder(this, R.style.ThemeOverlay_ANHUD_Dialog)
@@ -358,6 +347,7 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.TURN_SIGNALS -> OverlayPrefs.turnSignalsHideWhenMapActive(activity)
         OverlayTarget.CLOCK -> OverlayPrefs.clockHideWhenMapActive(activity)
         OverlayTarget.MAP, OverlayTarget.CONTAINER -> false
+        else -> false
     }
 
     if (target == OverlayTarget.CONTAINER || target == OverlayTarget.MAP) {
@@ -903,6 +893,7 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.TURN_SIGNALS -> previewTurnSignals
             OverlayTarget.CLOCK -> previewClock
             OverlayTarget.CONTAINER -> previewHudContainer
+            else -> previewHudContainer
         }
         val boundsWidth = if (target == OverlayTarget.CONTAINER) {
             displaySize.x.toFloat()
@@ -1100,6 +1091,7 @@ internal fun MainActivity.openPositionDialog(
                     previewShowOthers = showOthersCheck.isChecked
                 )
             }
+            else -> Unit
         }
     }
 
@@ -1221,6 +1213,7 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.TURN_SIGNALS -> previewTurnSignals
             OverlayTarget.CLOCK -> previewClock
             OverlayTarget.CONTAINER -> previewHudContainer
+            else -> previewHudContainer
         },
         lockX = false
     ) { previewX, previewY, persist ->
@@ -1441,6 +1434,7 @@ internal fun MainActivity.openPositionDialog(
                     previewShowOthers = showOthersCheck.isChecked
                 )
                 OverlayTarget.CONTAINER -> Unit
+                else -> Unit
             }
         }
 
@@ -1562,6 +1556,7 @@ internal fun MainActivity.openPositionDialog(
                     )
                 }
                 OverlayTarget.CONTAINER -> Unit
+                else -> Unit
             }
         }
     })
@@ -1691,6 +1686,7 @@ internal fun MainActivity.openPositionDialog(
                         previewShowOthers = showOthersCheck.isChecked
                     )
                 }
+                else -> Unit
             }
         }
 
@@ -1817,6 +1813,7 @@ internal fun MainActivity.openPositionDialog(
                         previewShowOthers = showOthersCheck.isChecked
                     )
                 }
+                else -> Unit
             }
         }
     })
@@ -1840,6 +1837,7 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.TURN_SIGNALS -> OverlayPrefs.setTurnSignalsHideWhenMapActive(activity, isChecked)
             OverlayTarget.CLOCK -> OverlayPrefs.setClockHideWhenMapActive(activity, isChecked)
             OverlayTarget.MAP, OverlayTarget.CONTAINER -> Unit
+            else -> Unit
         }
         notifyOverlaySettingsChanged(preview = true, previewTarget = target, previewShowOthers = showOthersCheck.isChecked)
     }

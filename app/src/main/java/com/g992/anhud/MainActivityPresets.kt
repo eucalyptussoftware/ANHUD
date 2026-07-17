@@ -284,6 +284,11 @@ private fun MainActivity.notifyOverlaySettingsChangedFull() {
     val containerSize = OverlayPrefs.containerSizeDp(this)
     val mapPos = OverlayPrefs.mapPositionDp(this)
     val mapSize = OverlayPrefs.mapSizeDp(this)
+    val lanesPos = OverlayPrefs.lanesPositionDp(this)
+    val batteryPos = OverlayPrefs.batteryPositionDp(this)
+    val rpmPos = OverlayPrefs.rpmPositionDp(this)
+    val fuelPos = OverlayPrefs.fuelPositionDp(this)
+    val powerPos = OverlayPrefs.powerPositionDp(this)
 
     notifyOverlaySettingsChanged(
         containerPosition = containerPos,
@@ -342,7 +347,27 @@ private fun MainActivity.notifyOverlaySettingsChangedFull() {
         turnSignalsEnabled = OverlayPrefs.turnSignalsEnabled(this),
         clockEnabled = OverlayPrefs.clockEnabled(this),
         trafficLightMaxActive = OverlayPrefs.trafficLightMaxActive(this),
-        mapEnabled = OverlayPrefs.mapEnabled(this)
+        mapEnabled = OverlayPrefs.mapEnabled(this),
+        lanesPosition = lanesPos,
+        rpmPosition = rpmPos,
+        fuelPosition = fuelPos,
+        batteryPosition = batteryPos,
+        powerPosition = powerPos,
+        lanesScale = OverlayPrefs.lanesScale(this),
+        rpmScale = OverlayPrefs.rpmScale(this),
+        fuelScale = OverlayPrefs.fuelScale(this),
+        batteryScale = OverlayPrefs.batteryScale(this),
+        powerScale = OverlayPrefs.powerScale(this),
+        lanesAlpha = OverlayPrefs.lanesAlpha(this),
+        rpmAlpha = OverlayPrefs.rpmAlpha(this),
+        fuelAlpha = OverlayPrefs.fuelAlpha(this),
+        batteryAlpha = OverlayPrefs.batteryAlpha(this),
+        powerAlpha = OverlayPrefs.powerAlpha(this),
+        lanesEnabled = OverlayPrefs.lanesEnabled(this),
+        rpmEnabled = OverlayPrefs.rpmEnabled(this),
+        fuelEnabled = OverlayPrefs.fuelEnabled(this),
+        batteryEnabled = OverlayPrefs.batteryEnabled(this),
+        powerEnabled = OverlayPrefs.powerEnabled(this)
     )
 }
 

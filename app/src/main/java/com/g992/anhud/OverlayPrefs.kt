@@ -191,7 +191,27 @@ object OverlayPrefs {
     private const val KEY_POWER_ALPHA = "overlay_power_alpha"
     private const val KEY_POWER_ENABLED = "overlay_power_enabled"
 
+    private const val KEY_LANES_X_DP = "overlay_lanes_x_dp"
+    private const val KEY_LANES_Y_DP = "overlay_lanes_y_dp"
+    private const val KEY_LANES_SCALE = "overlay_lanes_scale"
+    private const val KEY_LANES_ALPHA = "overlay_lanes_alpha"
+    private const val KEY_LANES_ENABLED = "overlay_lanes_enabled"
+
+    private const val KEY_RPM_X_DP = "overlay_rpm_x_dp"
+    private const val KEY_RPM_Y_DP = "overlay_rpm_y_dp"
+    private const val KEY_RPM_SCALE = "overlay_rpm_scale"
+    private const val KEY_RPM_ALPHA = "overlay_rpm_alpha"
+    private const val KEY_RPM_ENABLED = "overlay_rpm_enabled"
+
+    private const val KEY_FUEL_X_DP = "overlay_fuel_x_dp"
+    private const val KEY_FUEL_Y_DP = "overlay_fuel_y_dp"
+    private const val KEY_FUEL_SCALE = "overlay_fuel_scale"
+    private const val KEY_FUEL_ALPHA = "overlay_fuel_alpha"
+    private const val KEY_FUEL_ENABLED = "overlay_fuel_enabled"
+
     const val ICON_SIZE_DP = 48f
+    const val FUEL_BLOCK_HEIGHT_DP = 24f
+    const val RPM_BLOCK_HEIGHT_DP = 24f
     const val TURN_SIGNALS_ICON_SIZE_DP = 24f
     const val TURN_SIGNALS_ICON_STYLE_DEFAULT = 1
     const val NAV_WIDTH_MIN_DP = ICON_SIZE_DP * 2
@@ -1619,6 +1639,114 @@ object OverlayPrefs {
             HIDE_TURN_DYNAMIC_DISTANCE_MIN_METERS,
             HIDE_TURN_DYNAMIC_DISTANCE_MAX_METERS
         )
+    }
+
+    fun lanesPositionDp(context: Context): PointF {
+        val prefs = prefs(context)
+        val navPos = navPositionDp(context)
+        val defaultX = navPos.x
+        val defaultY = (navPos.y + 120f).coerceAtLeast(0f)
+        val x = prefs.getFloat(KEY_LANES_X_DP, defaultX)
+        val y = prefs.getFloat(KEY_LANES_Y_DP, defaultY)
+        return PointF(x, y)
+    }
+
+    fun setLanesPositionDp(context: Context, xDp: Float, yDp: Float) {
+        prefs(context).edit().putFloat(KEY_LANES_X_DP, xDp).putFloat(KEY_LANES_Y_DP, yDp).apply()
+    }
+
+    fun rpmPositionDp(context: Context): PointF {
+        val prefs = prefs(context)
+        val x = prefs.getFloat(KEY_RPM_X_DP, 10f)
+        val y = prefs.getFloat(KEY_RPM_Y_DP, 90f)
+        return PointF(x, y)
+    }
+
+    fun setRpmPositionDp(context: Context, xDp: Float, yDp: Float) {
+        prefs(context).edit().putFloat(KEY_RPM_X_DP, xDp).putFloat(KEY_RPM_Y_DP, yDp).apply()
+    }
+
+    fun fuelPositionDp(context: Context): PointF {
+        val prefs = prefs(context)
+        val x = prefs.getFloat(KEY_FUEL_X_DP, 10f)
+        val y = prefs.getFloat(KEY_FUEL_Y_DP, 130f)
+        return PointF(x, y)
+    }
+
+    fun setFuelPositionDp(context: Context, xDp: Float, yDp: Float) {
+        prefs(context).edit().putFloat(KEY_FUEL_X_DP, xDp).putFloat(KEY_FUEL_Y_DP, yDp).apply()
+    }
+
+    fun lanesScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_LANES_SCALE, 1f)
+    }
+
+    fun setLanesScale(context: Context, scale: Float) {
+        prefs(context).edit().putFloat(KEY_LANES_SCALE, scale).apply()
+    }
+
+    fun rpmScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_RPM_SCALE, 1f)
+    }
+
+    fun setRpmScale(context: Context, scale: Float) {
+        prefs(context).edit().putFloat(KEY_RPM_SCALE, scale).apply()
+    }
+
+    fun fuelScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_FUEL_SCALE, 1f)
+    }
+
+    fun setFuelScale(context: Context, scale: Float) {
+        prefs(context).edit().putFloat(KEY_FUEL_SCALE, scale).apply()
+    }
+
+    fun lanesAlpha(context: Context): Float {
+        return prefs(context).getFloat(KEY_LANES_ALPHA, 1f)
+    }
+
+    fun setLanesAlpha(context: Context, alpha: Float) {
+        prefs(context).edit().putFloat(KEY_LANES_ALPHA, alpha).apply()
+    }
+
+    fun rpmAlpha(context: Context): Float {
+        return prefs(context).getFloat(KEY_RPM_ALPHA, 1f)
+    }
+
+    fun setRpmAlpha(context: Context, alpha: Float) {
+        prefs(context).edit().putFloat(KEY_RPM_ALPHA, alpha).apply()
+    }
+
+    fun fuelAlpha(context: Context): Float {
+        return prefs(context).getFloat(KEY_FUEL_ALPHA, 1f)
+    }
+
+    fun setFuelAlpha(context: Context, alpha: Float) {
+        prefs(context).edit().putFloat(KEY_FUEL_ALPHA, alpha).apply()
+    }
+
+    fun lanesEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_LANES_ENABLED, true)
+    }
+
+    fun setLanesEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_LANES_ENABLED, enabled).apply()
+    }
+
+    fun rpmEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_RPM_ENABLED, true)
+    }
+
+    fun setRpmEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_RPM_ENABLED, enabled).apply()
+    }
+
+    fun fuelEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_FUEL_ENABLED, true)
+    }
+
+    fun setFuelEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_FUEL_ENABLED, enabled).apply()
     }
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

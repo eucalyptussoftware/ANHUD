@@ -18,6 +18,7 @@ import android.graphics.drawable.GradientDrawable
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.util.Log
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -110,6 +111,12 @@ class SettingsActivity : ScaledActivity() {
     private lateinit var speedCorrectionValue: TextView
     private lateinit var speedFromGpsCheck: SwitchCompat
     private lateinit var infoMirrorStarsheep7Switch: SwitchCompat
+    private lateinit var lanesEnabledSwitch: SwitchCompat
+    private lateinit var batterySocSwitch: SwitchCompat
+    private lateinit var engineRpmSwitch: SwitchCompat
+    private lateinit var fuelLevelSwitch: SwitchCompat
+    private lateinit var enginePowerSwitch: SwitchCompat
+    private lateinit var saveDebugLogsButton: Button
     private lateinit var hideTurnWhenFarSwitch: SwitchCompat
     private lateinit var hideTurnWhenFarDistanceSeek: SeekBar
     private lateinit var hideTurnWhenFarDistanceValue: TextView
@@ -328,6 +335,13 @@ class SettingsActivity : ScaledActivity() {
         speedCorrectionValue = findViewById(R.id.speedCorrectionValue)
         speedFromGpsCheck = findViewById(R.id.speedFromGpsCheck)
         infoMirrorStarsheep7Switch = findViewById(R.id.infoMirrorStarsheep7Switch)
+        lanesEnabledSwitch = findViewById(R.id.lanesEnabledSwitch)
+        batterySocSwitch = findViewById(R.id.batterySocSwitch)
+        engineRpmSwitch = findViewById(R.id.engineRpmSwitch)
+        fuelLevelSwitch = findViewById(R.id.fuelLevelSwitch)
+        enginePowerSwitch = findViewById(R.id.enginePowerSwitch)
+        saveDebugLogsButton = findViewById(R.id.saveDebugLogsButton)
+        styleSettingsButton(saveDebugLogsButton, SETTINGS_BUTTON_SECONDARY)
         hideTurnWhenFarSwitch = findViewById(R.id.hideTurnWhenFarSwitch)
         hideTurnWhenFarDistanceSeek = findViewById(R.id.hideTurnWhenFarDistanceSeek)
         hideTurnWhenFarDistanceValue = findViewById(R.id.hideTurnWhenFarDistanceValue)
@@ -516,6 +530,9 @@ class SettingsActivity : ScaledActivity() {
                 exportSettingsToDownloads()
             }
         }
+        saveDebugLogsButton.setOnClickListener {
+            saveDebugLogsToFile()
+        }
         importSettingsButton.setOnClickListener {
             importSettingsLauncher.launch(arrayOf("application/json", "*/*"))
         }
@@ -634,6 +651,36 @@ class SettingsActivity : ScaledActivity() {
             if (isSyncingUi) return@setOnCheckedChangeListener
             OverlayPrefs.setInfoMirrorStarsheep7Enabled(this, isChecked)
             broadcastInfoMirrorStarsheep7(isChecked)
+        }
+
+        lanesEnabledSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            OverlayPrefs.setLanesEnabled(this, isChecked)
+            broadcastOverlayPrefs()
+        }
+
+        batterySocSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            OverlayPrefs.setBatteryEnabled(this, isChecked)
+            broadcastOverlayPrefs()
+        }
+
+        engineRpmSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            OverlayPrefs.setRpmEnabled(this, isChecked)
+            broadcastOverlayPrefs()
+        }
+
+        fuelLevelSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            OverlayPrefs.setFuelEnabled(this, isChecked)
+            broadcastOverlayPrefs()
+        }
+
+        enginePowerSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            OverlayPrefs.setPowerEnabled(this, isChecked)
+            broadcastOverlayPrefs()
         }
 
         hideTurnWhenFarSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -2862,6 +2909,15 @@ class SettingsActivity : ScaledActivity() {
         intent.putExtra(OverlayBroadcasts.EXTRA_CONTAINER_Y_DP, containerPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_CONTAINER_WIDTH_DP, containerSize.x)
         intent.putExtra(OverlayBroadcasts.EXTRA_CONTAINER_HEIGHT_DP, containerSize.y)
+        val lanesPos = OverlayPrefs.lanesPositionDp(this)
+        val rpmPos = OverlayPrefs.rpmPositionDp(this)
+        val fuelPos = OverlayPrefs.fuelPositionDp(this)
+        intent.putExtra(OverlayBroadcasts.EXTRA_LANES_X_DP, lanesPos.x)
+        intent.putExtra(OverlayBroadcasts.EXTRA_LANES_Y_DP, lanesPos.y)
+        intent.putExtra(OverlayBroadcasts.EXTRA_RPM_X_DP, rpmPos.x)
+        intent.putExtra(OverlayBroadcasts.EXTRA_RPM_Y_DP, rpmPos.y)
+        intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_X_DP, fuelPos.x)
+        intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_Y_DP, fuelPos.y)
         intent.putExtra(OverlayBroadcasts.EXTRA_NAV_SCALE, OverlayPrefs.navScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_NAV_TEXT_SCALE, OverlayPrefs.navTextScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_TEXT_SCALE, OverlayPrefs.speedTextScale(this))
@@ -2873,6 +2929,9 @@ class SettingsActivity : ScaledActivity() {
         intent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_SCALE, OverlayPrefs.trafficLightScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_SCALE, OverlayPrefs.speedometerScale(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_SCALE, OverlayPrefs.turnSignalsScale(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_LANES_SCALE, OverlayPrefs.lanesScale(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_RPM_SCALE, OverlayPrefs.rpmScale(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_SCALE, OverlayPrefs.fuelScale(this))
         intent.putExtra(
             OverlayBroadcasts.EXTRA_TURN_SIGNALS_SPACING_DP,
             OverlayPrefs.turnSignalsSpacingDp(this)
@@ -2892,6 +2951,9 @@ class SettingsActivity : ScaledActivity() {
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEEDOMETER_ALPHA, OverlayPrefs.speedometerAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_TURN_SIGNALS_ALPHA, OverlayPrefs.turnSignalsAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_ALPHA, OverlayPrefs.clockAlpha(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_LANES_ALPHA, OverlayPrefs.lanesAlpha(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_RPM_ALPHA, OverlayPrefs.rpmAlpha(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_ALPHA, OverlayPrefs.fuelAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_CONTAINER_ALPHA, OverlayPrefs.containerAlpha(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_NAV_ENABLED, OverlayPrefs.navEnabled(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_ARROW_ENABLED, OverlayPrefs.arrowEnabled(this))
@@ -2906,6 +2968,9 @@ class SettingsActivity : ScaledActivity() {
             OverlayPrefs.speedometerShowUnitText(this)
         )
         intent.putExtra(OverlayBroadcasts.EXTRA_CLOCK_ENABLED, OverlayPrefs.clockEnabled(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_LANES_ENABLED, OverlayPrefs.lanesEnabled(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_RPM_ENABLED, OverlayPrefs.rpmEnabled(this))
+        intent.putExtra(OverlayBroadcasts.EXTRA_FUEL_ENABLED, OverlayPrefs.fuelEnabled(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_TRAFFIC_LIGHT_MAX_ACTIVE, OverlayPrefs.trafficLightMaxActive(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_LIMIT_ALERT_ENABLED, OverlayPrefs.speedLimitAlertEnabled(this))
         intent.putExtra(OverlayBroadcasts.EXTRA_SPEED_LIMIT_ALERT_THRESHOLD, OverlayPrefs.speedLimitAlertThreshold(this))
@@ -3465,6 +3530,11 @@ class SettingsActivity : ScaledActivity() {
             speedCorrectionValue.text = getString(R.string.speed_correction_value, correction)
             speedFromGpsCheck.isChecked = OverlayPrefs.speedFromGps(this)
             infoMirrorStarsheep7Switch.isChecked = OverlayPrefs.infoMirrorStarsheep7Enabled(this)
+            lanesEnabledSwitch.isChecked = OverlayPrefs.lanesEnabled(this)
+            batterySocSwitch.isChecked = OverlayPrefs.batteryEnabled(this)
+            engineRpmSwitch.isChecked = OverlayPrefs.rpmEnabled(this)
+            fuelLevelSwitch.isChecked = OverlayPrefs.fuelEnabled(this)
+            enginePowerSwitch.isChecked = OverlayPrefs.powerEnabled(this)
             val hideTurnWhenFarEnabled = OverlayPrefs.hideTurnWhenFarEnabled(this)
             hideTurnWhenFarSwitch.isChecked = hideTurnWhenFarEnabled
             val hideDistance = OverlayPrefs.hideTurnWhenFarDistanceMeters(this)
@@ -3837,6 +3907,60 @@ class SettingsActivity : ScaledActivity() {
             onSelected(position)
         }
         override fun onNothingSelected(parent: android.widget.AdapterView<*>) = Unit
+    }
+
+    private fun saveDebugLogsToFile() {
+        try {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val fileName = "anhud_debug_logs_$timestamp.txt"
+            val logs = StringBuilder().apply {
+                append("ANHUD Debug Logs\n")
+                append("Build: 1.0.0 (100)\n")
+                append("Device: ${Build.MANUFACTURER} ${Build.MODEL}\n")
+                append("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})\n")
+                append("------------------------------------------\n\n")
+                for (category in LogCategory.values()) {
+                    append("=== CATEGORY: $category ===\n")
+                    for (line in UiLogStore.snapshot(category)) {
+                        append("$line\n")
+                    }
+                    append("\n")
+                }
+            }
+            val content = logs.toString()
+            var dir = getExternalFilesDir("logs")
+            if (dir == null) {
+                dir = cacheDir
+            }
+            if (!dir.exists()) {
+                dir.mkdirs()
+            }
+            val file = File(dir, fileName)
+            file.writeText(content)
+            Log.i("SettingsActivity", "Logs saved to: ${file.absolutePath}")
+            UiLogStore.append(LogCategory.SYSTEM, "Logs saved: ${file.absolutePath}")
+            showToast("Логи сохранены: ${file.absolutePath}")
+
+            if (Build.VERSION.SDK_INT >= 29) {
+                try {
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                        put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri != null) {
+                        contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            outputStream.write(content.toByteArray(Charsets.UTF_8))
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore download insert errors
+                }
+            }
+        } catch (e: Exception) {
+            showToast("Не удалось сохранить логи")
+        }
     }
 
     companion object {

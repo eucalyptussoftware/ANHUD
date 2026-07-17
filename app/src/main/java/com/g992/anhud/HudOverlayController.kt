@@ -35,6 +35,7 @@ import kotlin.math.roundToInt
 
 class HudOverlayController(private val context: Context) {
     companion object {
+        private const val SHOW_DISTANCE_INSIDE_ARROW = false
         private const val CONTAINER_OUTLINE_PREVIEW_MIN_ALPHA = 0.35f
         private const val CLOCK_TICK_MS = 5_000L
         private const val MAP_HIDE_BY_MANEUVER_DELAY_MS = 5_000L
@@ -136,6 +137,11 @@ class HudOverlayController(private val context: Context) {
     private var batteryView: TextView? = null
     private var powerContainer: LinearLayout? = null
     private var powerView: TextView? = null
+    private var rpmContainer: LinearLayout? = null
+    private var rpmView: TextView? = null
+    private var fuelContainer: LinearLayout? = null
+    private var fuelView: TextView? = null
+    private var lanesContainer: LinearLayout? = null
     private var mapContainerView: FrameLayout? = null
     private var mapContentView: FrameLayout? = null
     private var mapTripStatusView: MapTripStatusView? = null
@@ -204,6 +210,15 @@ class HudOverlayController(private val context: Context) {
     private var powerScale: Float = OverlayPrefs.powerScale(context)
     private var batteryAlpha: Float = OverlayPrefs.batteryAlpha(context)
     private var powerAlpha: Float = OverlayPrefs.powerAlpha(context)
+    private var lanesPositionDp: PointF = OverlayPrefs.lanesPositionDp(context)
+    private var rpmPositionDp: PointF = OverlayPrefs.rpmPositionDp(context)
+    private var fuelPositionDp: PointF = OverlayPrefs.fuelPositionDp(context)
+    private var lanesScale: Float = OverlayPrefs.lanesScale(context)
+    private var rpmScale: Float = OverlayPrefs.rpmScale(context)
+    private var fuelScale: Float = OverlayPrefs.fuelScale(context)
+    private var lanesAlpha: Float = OverlayPrefs.lanesAlpha(context)
+    private var rpmAlpha: Float = OverlayPrefs.rpmAlpha(context)
+    private var fuelAlpha: Float = OverlayPrefs.fuelAlpha(context)
     private var containerAlpha: Float = OverlayPrefs.containerAlpha(context)
     private var mapAlpha: Float = OverlayPrefs.mapAlpha(context)
     private var navEnabled: Boolean = OverlayPrefs.navEnabled(context)
@@ -226,6 +241,9 @@ class HudOverlayController(private val context: Context) {
     private var clockEnabled: Boolean = OverlayPrefs.clockEnabled(context)
     private var batteryEnabled: Boolean = OverlayPrefs.batteryEnabled(context)
     private var powerEnabled: Boolean = OverlayPrefs.powerEnabled(context)
+    private var lanesEnabled: Boolean = OverlayPrefs.lanesEnabled(context)
+    private var rpmEnabled: Boolean = OverlayPrefs.rpmEnabled(context)
+    private var fuelEnabled: Boolean = OverlayPrefs.fuelEnabled(context)
     private var mapEnabled: Boolean = OverlayPrefs.mapEnabled(context)
     private var infoMirrorStarsheep7Enabled: Boolean = OverlayPrefs.infoMirrorStarsheep7Enabled(context)
     private var previewMode: Boolean = false
@@ -683,7 +701,19 @@ class HudOverlayController(private val context: Context) {
         preview: Boolean? = null,
         previewTarget: String? = null,
         previewShowOthers: Boolean? = null,
-        infoMirrorStarsheep7Enabled: Boolean? = null
+        infoMirrorStarsheep7Enabled: Boolean? = null,
+        lanesPosition: PointF? = null,
+        rpmPosition: PointF? = null,
+        fuelPosition: PointF? = null,
+        lanesScale: Float? = null,
+        rpmScale: Float? = null,
+        fuelScale: Float? = null,
+        lanesAlpha: Float? = null,
+        rpmAlpha: Float? = null,
+        fuelAlpha: Float? = null,
+        lanesEnabled: Boolean? = null,
+        rpmEnabled: Boolean? = null,
+        fuelEnabled: Boolean? = null
     ) {
         handler.post {
             val shouldClearForPreviewTransition = (preview != null && previewMode != preview) ||
@@ -746,13 +776,22 @@ class HudOverlayController(private val context: Context) {
                 turnSignalsPositionDp = turnSignalsPosition
             }
             if (clockPosition != null) {
-        if (batteryPosition != null) {
-            this.batteryPositionDp = batteryPosition
-        }
-        if (powerPosition != null) {
-            this.powerPositionDp = powerPosition
-        }
                 clockPositionDp = clockPosition
+            }
+            if (batteryPosition != null) {
+                this.batteryPositionDp = batteryPosition
+            }
+            if (powerPosition != null) {
+                this.powerPositionDp = powerPosition
+            }
+            if (lanesPosition != null) {
+                this.lanesPositionDp = lanesPosition
+            }
+            if (rpmPosition != null) {
+                this.rpmPositionDp = rpmPosition
+            }
+            if (fuelPosition != null) {
+                this.fuelPositionDp = fuelPosition
             }
             if (navScale != null) {
                 this.navScale = navScale.coerceAtLeast(0f)
@@ -803,13 +842,22 @@ class HudOverlayController(private val context: Context) {
                 applyTurnSignalsIconStyle()
             }
             if (clockScale != null) {
-        if (batteryScale != null) {
-            this.batteryScale = batteryScale
-        }
-        if (powerScale != null) {
-            this.powerScale = powerScale
-        }
                 this.clockScale = clockScale.coerceAtLeast(0f)
+            }
+            if (batteryScale != null) {
+                this.batteryScale = batteryScale.coerceAtLeast(0f)
+            }
+            if (powerScale != null) {
+                this.powerScale = powerScale.coerceAtLeast(0f)
+            }
+            if (lanesScale != null) {
+                this.lanesScale = lanesScale.coerceAtLeast(0f)
+            }
+            if (rpmScale != null) {
+                this.rpmScale = rpmScale.coerceAtLeast(0f)
+            }
+            if (fuelScale != null) {
+                this.fuelScale = fuelScale.coerceAtLeast(0f)
             }
             if (navAlpha != null) {
                 this.navAlpha = navAlpha.coerceIn(0f, 1f)
@@ -842,13 +890,22 @@ class HudOverlayController(private val context: Context) {
                 this.turnSignalsAlpha = turnSignalsAlpha.coerceIn(0f, 1f)
             }
             if (clockAlpha != null) {
-        if (batteryAlpha != null) {
-            this.batteryAlpha = batteryAlpha
-        }
-        if (powerAlpha != null) {
-            this.powerAlpha = powerAlpha
-        }
                 this.clockAlpha = clockAlpha.coerceIn(0f, 1f)
+            }
+            if (batteryAlpha != null) {
+                this.batteryAlpha = batteryAlpha.coerceIn(0f, 1f)
+            }
+            if (powerAlpha != null) {
+                this.powerAlpha = powerAlpha.coerceIn(0f, 1f)
+            }
+            if (lanesAlpha != null) {
+                this.lanesAlpha = lanesAlpha.coerceIn(0f, 1f)
+            }
+            if (rpmAlpha != null) {
+                this.rpmAlpha = rpmAlpha.coerceIn(0f, 1f)
+            }
+            if (fuelAlpha != null) {
+                this.fuelAlpha = fuelAlpha.coerceIn(0f, 1f)
             }
             if (containerAlpha != null) {
                 this.containerAlpha = containerAlpha.coerceIn(0f, 1f)
@@ -907,13 +964,22 @@ class HudOverlayController(private val context: Context) {
                 this.turnSignalsEnabled = turnSignalsEnabled
             }
             if (clockEnabled != null) {
-        if (batteryEnabled != null) {
-            this.batteryEnabled = batteryEnabled
-        }
-        if (powerEnabled != null) {
-            this.powerEnabled = powerEnabled
-        }
                 this.clockEnabled = clockEnabled
+            }
+            if (batteryEnabled != null) {
+                this.batteryEnabled = batteryEnabled
+            }
+            if (powerEnabled != null) {
+                this.powerEnabled = powerEnabled
+            }
+            if (lanesEnabled != null) {
+                this.lanesEnabled = lanesEnabled
+            }
+            if (rpmEnabled != null) {
+                this.rpmEnabled = rpmEnabled
+            }
+            if (fuelEnabled != null) {
+                this.fuelEnabled = fuelEnabled
             }
             if (trafficLightMaxActive != null) {
                 this.trafficLightMaxActive = trafficLightMaxActive.coerceAtLeast(1)
@@ -1549,6 +1615,55 @@ class HudOverlayController(private val context: Context) {
         powerBlock.addView(powerIcon)
         powerBlock.addView(powerText)
 
+        val rpmBlock = LinearLayout(displayContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+            visibility = View.GONE
+        }
+        val rpmIcon = ImageView(displayContext).apply {
+            layoutParams = LinearLayout.LayoutParams((16f * metrics.density).roundToInt(), (16f * metrics.density).roundToInt()).apply { marginEnd = (4f * metrics.density).roundToInt() }
+            setImageResource(R.drawable.ic_rpm)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val rpmText = TextView(displayContext).apply {
+            includeFontPadding = false
+            setPadding(0, 0, 0, 0)
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        rpmBlock.addView(rpmIcon)
+        rpmBlock.addView(rpmText)
+
+        val fuelBlock = LinearLayout(displayContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+            visibility = View.GONE
+        }
+        val fuelIcon = ImageView(displayContext).apply {
+            layoutParams = LinearLayout.LayoutParams((16f * metrics.density).roundToInt(), (16f * metrics.density).roundToInt()).apply { marginEnd = (4f * metrics.density).roundToInt() }
+            setImageResource(R.drawable.ic_fuel_new)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val fuelText = TextView(displayContext).apply {
+            includeFontPadding = false
+            setPadding(0, 0, 0, 0)
+            setTextColor(Color.WHITE)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        fuelBlock.addView(fuelIcon)
+        fuelBlock.addView(fuelText)
+
+        val lanesBlock = LinearLayout(displayContext).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+            visibility = View.GONE
+        }
+
         val mapBlock = FrameLayout(displayContext).apply {
             layoutParams = FrameLayout.LayoutParams(1, 1)
             clipChildren = true
@@ -1622,6 +1737,9 @@ class HudOverlayController(private val context: Context) {
         root.addView(clockText)
         root.addView(batteryBlock)
         root.addView(powerBlock)
+        root.addView(lanesBlock)
+        root.addView(rpmBlock)
+        root.addView(fuelBlock)
 
         val layoutParams = WindowManager.LayoutParams(
             containerWidthPx,
@@ -1686,6 +1804,12 @@ class HudOverlayController(private val context: Context) {
             batteryContainer = batteryBlock
             batteryView = batteryText
             powerContainer = powerBlock
+            rpmContainer = rpmBlock
+            rpmView = rpmText
+            fuelContainer = fuelBlock
+            fuelView = fuelText
+            lanesContainer = lanesBlock
+
             powerView = powerText
             mapContainerView = mapBlock
             mapContentView = mapContent
@@ -1749,6 +1873,11 @@ class HudOverlayController(private val context: Context) {
         batteryView = null
         powerContainer = null
         powerView = null
+        rpmContainer = null
+        rpmView = null
+        fuelContainer = null
+        fuelView = null
+        lanesContainer = null
             mapContainerView = null
             mapContentView = null
             mapTripStatusView = null
@@ -1830,6 +1959,11 @@ class HudOverlayController(private val context: Context) {
         batteryView = null
         powerContainer = null
         powerView = null
+        rpmContainer = null
+        rpmView = null
+        fuelContainer = null
+        fuelView = null
+        lanesContainer = null
         mapContainerView = null
         mapContentView = null
         mapTripStatusView = null
@@ -2314,12 +2448,26 @@ class HudOverlayController(private val context: Context) {
         laneGuidanceHadVisibleContent = laneGuidanceVisible
         mapHadVisibleContent = mapVisible
 
+        updateSensorsAndCamera(
+            batterySoc = state.batterySoc,
+            engineRpm = state.engineRpm,
+            fuelLevel = state.fuelLevel,
+            enginePower = state.enginePower,
+            showPreview = showPreview
+        )
+        updateLanes(
+            lanes = state.lanes,
+            allowed = lanesEnabled,
+            preview = showPreview
+        )
         applyLayout()
     }
 
 
-    private fun updateBatteryAndPower(
+    private fun updateSensorsAndCamera(
         batterySoc: Int?,
+        engineRpm: Int?,
+        fuelLevel: Int?,
         enginePower: Float?,
         showPreview: Boolean
     ) {
@@ -2338,7 +2486,33 @@ class HudOverlayController(private val context: Context) {
             }
             bContainer.visibility = if (batteryEnabled) View.VISIBLE else View.GONE
         }
-        
+
+        val rContainer = rpmContainer
+        if (rContainer != null) {
+            val rpmVal = if (showPreview) 2500 else engineRpm
+            val rpmTextString = rpmVal?.toString() ?: "--"
+            rpmView?.text = context.getString(R.string.engine_rpm_format, rpmTextString)
+            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_RPM) {
+                rContainer.background = ContextCompat.getDrawable(context, R.drawable.bg_nav_block_outline)
+            } else {
+                rContainer.background = null
+            }
+            rContainer.visibility = if (rpmEnabled) View.VISIBLE else View.GONE
+        }
+
+        val fContainer = fuelContainer
+        if (fContainer != null) {
+            val fuelVal = if (showPreview) 45 else fuelLevel
+            val fuelTextString = fuelVal?.toString() ?: "--"
+            fuelView?.text = context.getString(R.string.fuel_level_format, fuelTextString)
+            if (previewMode && previewTarget == OverlayBroadcasts.PREVIEW_TARGET_FUEL) {
+                fContainer.background = ContextCompat.getDrawable(context, R.drawable.bg_nav_block_outline)
+            } else {
+                fContainer.background = null
+            }
+            fContainer.visibility = if (fuelEnabled) View.VISIBLE else View.GONE
+        }
+
         val pContainer = powerContainer
         if (pContainer != null) {
             val pwr = if (showPreview) 20.0f else enginePower
@@ -2361,6 +2535,77 @@ class HudOverlayController(private val context: Context) {
             pContainer.visibility = if (powerEnabled) View.VISIBLE else View.GONE
         }
     }
+
+    private fun updateLanes(lanes: List<LaneInfo>, allowed: Boolean, preview: Boolean) {
+        val container = lanesContainer ?: return
+        val shownLanes = if (preview && lanes.isEmpty()) {
+            listOf(
+                LaneInfo(listOf(0), true),
+                LaneInfo(listOf(1), false),
+                LaneInfo(listOf(2), false)
+            )
+        } else {
+            lanes
+        }
+        if (!allowed || shownLanes.isEmpty()) {
+            container.removeAllViews()
+            container.visibility = View.GONE
+            return
+        }
+        container.removeAllViews()
+        val density = container.resources.displayMetrics.density
+        val iconSize = (24f * density).roundToInt()
+        val spacing = (4f * density).roundToInt()
+        for ((i, laneInfo) in shownLanes.withIndex()) {
+            val imageView = ImageView(container.context)
+            val layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+            if (i < shownLanes.lastIndex) {
+                layoutParams.setMarginEnd(spacing)
+            }
+            imageView.layoutParams = layoutParams
+            imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+            imageView.setImageResource(resolveLaneDrawable(laneInfo.directions))
+            if (laneInfo.highlighted) {
+                imageView.setColorFilter(ContextCompat.getColor(imageView.context, R.color.traffic_light_green_primary))
+            } else {
+                imageView.setColorFilter(Color.WHITE)
+            }
+            container.addView(imageView)
+        }
+        container.visibility = View.VISIBLE
+    }
+
+    private fun resolveLaneDrawable(directions: List<Int>): Int {
+        if (directions.contains(0) && directions.contains(2)) {
+            return R.drawable.context_lane_leftfromright_small_24
+        }
+        if (directions.contains(0) && directions.contains(5)) {
+            return R.drawable.context_lane_rightfromleft_small_24
+        }
+        if (directions.contains(2)) {
+            return R.drawable.context_lane_left90_small_24
+        }
+        if (directions.contains(1)) {
+            return R.drawable.context_lane_left45_small_24
+        }
+        if (directions.contains(3)) {
+            return R.drawable.context_lane_left135_small_24
+        }
+        if (directions.contains(5)) {
+            return R.drawable.context_lane_right90_small_24
+        }
+        if (directions.contains(4)) {
+            return R.drawable.context_lane_right45_small_24
+        }
+        if (directions.contains(6)) {
+            return R.drawable.context_lane_right135_small_24
+        }
+        if (directions.contains(7) || directions.contains(8)) {
+            return R.drawable.context_lane_left180_small_24
+        }
+        return R.drawable.context_lane_straightahead_small_24
+    }
+
     private fun shouldHideHudSpeed(state: NavigationHudState, showPreview: Boolean): Boolean {
         if (showPreview) {
             cancelHudSpeedHide()
@@ -2559,8 +2804,12 @@ class HudOverlayController(private val context: Context) {
                 val drawableRes = WazeManeuverMapper.drawableForManeuver(wazeId)
                 image.setImageResource(drawableRes)
                 image.visibility = View.VISIBLE
-                label.text = nextText
-                label.visibility = if (nextText.isNotBlank()) View.VISIBLE else View.GONE
+                if (SHOW_DISTANCE_INSIDE_ARROW) {
+                    label.text = nextText
+                    label.visibility = if (nextText.isNotBlank()) View.VISIBLE else View.GONE
+                } else {
+                    label.visibility = View.GONE
+                }
             } else {
                 image.visibility = View.GONE
                 label.visibility = View.GONE
@@ -3419,6 +3668,30 @@ class HudOverlayController(private val context: Context) {
         }
         powerContainer?.let {
             positionView(it, powerPositionDp, powerScale, powerAlpha, metrics.density, containerWidth, containerHeight)
+        }
+        lanesContainer?.let {
+            if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_LANES)) {
+                it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
+            } else {
+                it.background = null
+            }
+            positionView(it, lanesPositionDp, lanesScale, lanesAlpha, metrics.density, containerWidth, containerHeight)
+        }
+        rpmContainer?.let {
+            if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_RPM)) {
+                it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
+            } else {
+                it.background = null
+            }
+            positionView(it, rpmPositionDp, rpmScale, rpmAlpha, metrics.density, containerWidth, containerHeight)
+        }
+        fuelContainer?.let {
+            if (isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_FUEL)) {
+                it.background = ContextCompat.getDrawable(it.context, R.drawable.bg_nav_block_outline)
+            } else {
+                it.background = null
+            }
+            positionView(it, fuelPositionDp, fuelScale, fuelAlpha, metrics.density, containerWidth, containerHeight)
         }
         updateMapView(displayContext, containerWidthPx, containerHeightPx)
     }
