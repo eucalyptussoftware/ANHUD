@@ -41,6 +41,13 @@ class NavigationReceiver : BroadcastReceiver() {
                     timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, System.currentTimeMillis()),
                     hasImage = intent.getBooleanExtra(EXTRA_HAS_IMAGE, false)
                 )
+                if (action == ACTION_WAZE_NAV_UPDATE && update.routeActive && OverlayPrefs.mirrorEnabled(context) && !ScreenMirrorManager.hasProjectionData()) {
+                    val startIntent = Intent(context, MainActivity::class.java).apply {
+                        putExtra("EXTRA_START_MIRROR", true)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    }
+                    context.startActivity(startIntent)
+                }
                 val wazeManeuverId = if (action == ACTION_WAZE_NAV_UPDATE) {
                     intent.getIntExtra(EXTRA_WAZE_MANEUVER_ID, -1)
                 } else {

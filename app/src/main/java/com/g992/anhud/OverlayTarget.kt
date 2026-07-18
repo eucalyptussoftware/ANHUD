@@ -2,6 +2,7 @@ package com.g992.anhud
 
 enum class OverlayTarget(val previewKey: String) {
     MAP(OverlayBroadcasts.PREVIEW_TARGET_MAP),
+    MAP_MIRROR(OverlayBroadcasts.PREVIEW_TARGET_MAP),
     NAVIGATION(OverlayBroadcasts.PREVIEW_TARGET_NAV),
     LANE_GUIDANCE(OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE),
     ARROW(OverlayBroadcasts.PREVIEW_TARGET_ARROW),

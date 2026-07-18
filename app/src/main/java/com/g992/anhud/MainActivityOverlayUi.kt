@@ -81,6 +81,7 @@ internal fun MainActivity.syncUiFromPrefs() {
         nativeNavSwitch.isChecked = OverlayPrefs.nativeNavEnabled(this)
         mapToggleSwitch?.isChecked = OverlayPrefs.mapEnabled(this)
         mapProjectionSwitch.isChecked = OverlayPrefs.mapEnabled(this)
+        mirrorProjectionSwitch.isChecked = OverlayPrefs.mirrorEnabled(this)
         navProjectionSwitch.isChecked = OverlayPrefs.navEnabled(this)
         laneGuidanceProjectionSwitch.isChecked = OverlayPrefs.laneGuidanceEnabled(this)
         arrowProjectionSwitch.isChecked = OverlayPrefs.arrowEnabled(this)

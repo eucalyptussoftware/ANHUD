@@ -244,6 +244,7 @@ class HudOverlayController(private val context: Context) {
     private var rpmEnabled: Boolean = OverlayPrefs.rpmEnabled(context)
     private var fuelEnabled: Boolean = OverlayPrefs.fuelEnabled(context)
     private var mapEnabled: Boolean = OverlayPrefs.mapEnabled(context)
+    private var mirrorEnabled: Boolean = OverlayPrefs.mirrorEnabled(context)
     private var infoMirrorStarsheep7Enabled: Boolean = OverlayPrefs.infoMirrorStarsheep7Enabled(context)
     private var previewMode: Boolean = false
     private var previewTarget: String? = null
@@ -365,12 +366,13 @@ class HudOverlayController(private val context: Context) {
     }
 
     fun shouldRefreshForMapRouteTelemetry(): Boolean {
-        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
+        val mapActive = mapEnabled || mirrorEnabled
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapActive)
         val previewLaneGuidance = shouldPreviewBlock(
             OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE,
             laneGuidanceEnabled
         )
-        return mapEnabled || laneGuidanceEnabled || previewMap || previewLaneGuidance
+        return mapActive || laneGuidanceEnabled || previewMap || previewLaneGuidance
     }
 
     private fun buildRenderSignature(state: NavigationHudState): RenderSignature {
@@ -437,8 +439,9 @@ class HudOverlayController(private val context: Context) {
         val roadCameraBitmap = state.roadCameraIcon
         val bitmap = state.maneuverBitmap
         val laneGuidanceManeuver = MapRouteTelemetryStore.current().laneManeuver
-        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
-        val includeTripStatusInSignature = previewMap || mapEnabled || mapHadVisibleContent
+        val mapActive = mapEnabled || mirrorEnabled
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapActive)
+        val includeTripStatusInSignature = previewMap || mapActive || mapHadVisibleContent
         val tripStatusDistanceText = if (!includeTripStatusInSignature) {
             ""
         } else if (previewMap) {
@@ -984,7 +987,8 @@ class HudOverlayController(private val context: Context) {
                 this.trafficLightMaxActive = trafficLightMaxActive.coerceAtLeast(1)
             }
             if (mapEnabled != null) {
-                this.mapEnabled = mapEnabled
+                this.mapEnabled = OverlayPrefs.mapEnabled(context)
+                this.mirrorEnabled = OverlayPrefs.mirrorEnabled(context)
             }
             if (infoMirrorStarsheep7Enabled != null) {
                 this.infoMirrorStarsheep7Enabled = infoMirrorStarsheep7Enabled
@@ -2092,13 +2096,14 @@ class HudOverlayController(private val context: Context) {
             OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE,
             laneGuidanceEnabled
         )
-        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
+        val mapActive = mapEnabled || mirrorEnabled
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapActive)
         val navAllowed = navEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_NAV)
         val laneGuidanceAllowed =
             laneGuidanceEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_LANE_GUIDANCE)
         val routeSnapshot = MapRouteTelemetryStore.current()
         val hasMapRoute = routeSnapshot.hasRoute
-        val mapAllowed = mapEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_MAP)
+        val mapAllowed = mapActive || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_MAP)
         val arrowAllowed = arrowEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_ARROW)
         val speedAllowed = speedEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_SPEED)
         val speedometerAllowed = speedometerEnabled || isPreviewTarget(OverlayBroadcasts.PREVIEW_TARGET_SPEEDOMETER)
@@ -3780,10 +3785,11 @@ class HudOverlayController(private val context: Context) {
     }
 
     private fun updateMapView(displayContext: Context, containerWidthPx: Int, containerHeightPx: Int) {
-        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapEnabled)
+        val mapActive = mapEnabled || mirrorEnabled
+        val previewMap = shouldPreviewBlock(OverlayBroadcasts.PREVIEW_TARGET_MAP, mapActive)
         val routeSnapshot = MapRouteTelemetryStore.current()
         val hasMapRoute = routeSnapshot.hasRoute
-        val runtimeMapVisible = !previewMode && mapEnabled && hasMapRoute && !hideMapByManeuverActive
+        val runtimeMapVisible = !previewMode && ((mapEnabled && hasMapRoute) || (mirrorEnabled && ScreenMirrorManager.hasProjectionData())) && !hideMapByManeuverActive
         logMapState(
             stage = "update",
             previewMap = previewMap,
@@ -3860,35 +3866,57 @@ class HudOverlayController(private val context: Context) {
         } else {
             mapContent.visibility = View.VISIBLE
             placeholder.visibility = View.GONE
-            if (ScreenMirrorManager.hasProjectionData()) {
+            if (mirrorEnabled && ScreenMirrorManager.hasProjectionData()) {
                 releaseMapController()
-                if (mapContent.childCount == 0) {
-                    val textureView = android.view.TextureView(displayContext).apply {
-                        layoutParams = android.widget.FrameLayout.LayoutParams(
-                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
-                        )
-                        surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
-                            override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, width: Int, height: Int) {
-                                val surface = android.view.Surface(st)
-                                val metrics = displayContext.resources.displayMetrics
-                                ScreenMirrorManager.startMirroring(displayContext, surface, width, height, metrics)
-                                
-                                // Crop to center. Assuming Waze uses the whole screen.
-                                // Let's zoom 2x for a start, focused on the center.
-                                val matrix = android.graphics.Matrix()
-                                matrix.postScale(2.5f, 2.5f, width / 2f, height / 2f)
-                                setTransform(matrix)
-                            }
-                            override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, width: Int, height: Int) {}
-                            override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture): Boolean {
-                                ScreenMirrorManager.stopMirroring()
-                                return true
-                            }
-                            override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) {}
+                
+                val defaultMetrics = android.util.DisplayMetrics()
+                val wm = displayContext.getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager
+                wm.defaultDisplay.getRealMetrics(defaultMetrics)
+
+                val sc = OverlayPrefs.mirrorScale(displayContext)
+                val offX = OverlayPrefs.mirrorOffsetX(displayContext)
+                val offY = OverlayPrefs.mirrorOffsetY(displayContext)
+
+                val baseWidth = containerWidthPx
+                val baseHeight = (containerWidthPx * (defaultMetrics.heightPixels.toFloat() / defaultMetrics.widthPixels)).toInt()
+
+                val targetWidth = (baseWidth * sc).toInt()
+                val targetHeight = (baseHeight * sc).toInt()
+
+                val centerXMargin = (containerWidthPx - targetWidth) / 2
+                val centerYMargin = (containerHeightPx - targetHeight) / 2
+
+                val finalLeftMargin = (centerXMargin + offX).toInt()
+                val finalTopMargin = (centerYMargin + offY).toInt()
+
+                val surfaceView = if (mapContent.childCount > 0) mapContent.getChildAt(0) as? android.view.SurfaceView else null
+                if (surfaceView == null) {
+                    val sv = android.view.SurfaceView(displayContext).apply {
+                        layoutParams = android.widget.FrameLayout.LayoutParams(targetWidth, targetHeight).apply {
+                            leftMargin = finalLeftMargin
+                            topMargin = finalTopMargin
                         }
+                        holder.addCallback(object : android.view.SurfaceHolder.Callback {
+                            override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                                val surface = holder.surface
+                                ScreenMirrorManager.startMirroring(displayContext, surface, defaultMetrics.widthPixels, defaultMetrics.heightPixels, defaultMetrics)
+                            }
+                            override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, w: Int, h: Int) {}
+                            override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                                ScreenMirrorManager.stopMirroring()
+                            }
+                        })
                     }
-                    mapContent.addView(textureView)
+                    mapContent.removeAllViews()
+                    mapContent.addView(sv)
+                } else {
+                    surfaceView.layoutParams = (surfaceView.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+                        width = targetWidth
+                        height = targetHeight
+                        leftMargin = finalLeftMargin
+                        topMargin = finalTopMargin
+                    }
+                    mapContent.requestLayout()
                 }
             } else {
                 ensureLocalMapController(displayContext, mapContent).apply {
@@ -4010,11 +4038,13 @@ class HudOverlayController(private val context: Context) {
         if (existing != null) {
             return existing
         }
+        mapContent.removeAllViews()
         return HudMapController(displayContext).also { controller ->
             hudMapController = controller
             controller.attachTo(mapContent)
         }
     }
+
 
     private fun resolveContainerSizePx(metrics: android.util.DisplayMetrics): Pair<Int, Int> {
         val density = metrics.density

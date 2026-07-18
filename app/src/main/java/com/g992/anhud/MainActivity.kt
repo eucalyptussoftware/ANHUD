@@ -121,6 +121,7 @@ class MainActivity : ScaledActivity() {
     internal lateinit var displaySpinner: Spinner
     private lateinit var positionContainerCard: View
     private lateinit var positionMapCard: View
+    private lateinit var positionMapMirrorCard: View
     private lateinit var positionNavCard: View
     private lateinit var positionLaneGuidanceCard: View
     private lateinit var positionArrowCard: View
@@ -145,6 +146,7 @@ class MainActivity : ScaledActivity() {
     internal lateinit var navProjectionSwitch: SwitchCompat
     internal lateinit var laneGuidanceProjectionSwitch: SwitchCompat
     internal lateinit var mapProjectionSwitch: SwitchCompat
+    internal lateinit var mirrorProjectionSwitch: SwitchCompat
     internal lateinit var arrowProjectionSwitch: SwitchCompat
     internal lateinit var speedProjectionSwitch: SwitchCompat
     internal lateinit var hudSpeedProjectionSwitch: SwitchCompat
@@ -206,17 +208,35 @@ class MainActivity : ScaledActivity() {
         turnSignalCustomIconPickerCallback = onResult
         turnSignalCustomIconPickerLauncher.launch(arrayOf("image/png", "image/svg+xml"))
     }
+    private var wasAutoStartedMirror = false
+
     private val mediaProjectionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
             ScreenMirrorManager.setProjectionData(result.resultCode, result.data!!)
-            OverlayPrefs.setMapEnabled(this, true)
-            notifyOverlaySettingsChanged(mapEnabled = true)
-            // Service is already running, no need to start it again. Just notify.
+            OverlayPrefs.setMirrorEnabled(this, true)
+            notifyOverlaySettingsChanged()
+            
+            if (wasAutoStartedMirror) {
+                wasAutoStartedMirror = false
+                moveTaskToBack(true) // Hide MainActivity and return to Waze
+            }
+        }
+    }
+
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra("EXTRA_START_MIRROR", false) == true) {
+            if (!ScreenMirrorManager.hasProjectionData()) {
+                wasAutoStartedMirror = true
+                val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
+                mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
         enableEdgeToEdge()
         setContentView(R.layout.activity_hud_display_settings)
         settingsRoot = findViewById(R.id.settingsRoot)
@@ -246,6 +266,7 @@ class MainActivity : ScaledActivity() {
         displaySpinner = findViewById(R.id.displaySpinner)
         positionContainerCard = findViewById(R.id.positionContainerCard)
         positionMapCard = findViewById(R.id.positionMapCard)
+        positionMapMirrorCard = findViewById(R.id.positionMapMirrorCard)
         positionNavCard = findViewById(R.id.positionNavCard)
         positionLaneGuidanceCard = findViewById(R.id.positionLaneGuidanceCard)
         positionArrowCard = findViewById(R.id.positionArrowCard)
@@ -270,6 +291,7 @@ class MainActivity : ScaledActivity() {
         navProjectionSwitch = findViewById(R.id.navProjectionSwitch)
         laneGuidanceProjectionSwitch = findViewById(R.id.laneGuidanceProjectionSwitch)
         mapProjectionSwitch = findViewById(R.id.mapProjectionSwitch)
+        mirrorProjectionSwitch = findViewById(R.id.mirrorProjectionSwitch)
         arrowProjectionSwitch = findViewById(R.id.arrowProjectionSwitch)
         speedProjectionSwitch = findViewById(R.id.speedProjectionSwitch)
         hudSpeedProjectionSwitch = findViewById(R.id.hudSpeedProjectionSwitch)
@@ -373,7 +395,6 @@ class MainActivity : ScaledActivity() {
                 NativeNavigationController.stopNavigation(this)
             }
         }
-
         mapProjectionSwitch.apply {
             isChecked = OverlayPrefs.mapEnabled(this@MainActivity)
             setOnCheckedChangeListener { _, isChecked ->
@@ -381,6 +402,12 @@ class MainActivity : ScaledActivity() {
                     return@setOnCheckedChangeListener
                 }
                 OverlayPrefs.setMapEnabled(this@MainActivity, isChecked)
+                if (isChecked) {
+                    isSyncingUi = true
+                    mirrorProjectionSwitch.isChecked = false
+                    OverlayPrefs.setMirrorEnabled(this@MainActivity, false)
+                    isSyncingUi = false
+                }
                 notifyOverlaySettingsChanged(mapEnabled = isChecked)
                 if (isChecked && !hasForegroundLocationPermission()) {
                     requestForegroundLocationPermission()
@@ -390,8 +417,36 @@ class MainActivity : ScaledActivity() {
             }
         }
 
+        mirrorProjectionSwitch.apply {
+            isChecked = OverlayPrefs.mirrorEnabled(this@MainActivity)
+            setOnCheckedChangeListener { _, isChecked ->
+                if (isSyncingUi) {
+                    return@setOnCheckedChangeListener
+                }
+                OverlayPrefs.setMirrorEnabled(this@MainActivity, isChecked)
+                if (isChecked) {
+                    isSyncingUi = true
+                    mapProjectionSwitch.isChecked = false
+                    OverlayPrefs.setMapEnabled(this@MainActivity, false)
+                    isSyncingUi = false
+                    
+                    // Automatically trigger MediaProjection permission request
+                    val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
+                    try {
+                        mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                    } catch (e: Exception) {
+                        android.util.Log.e("ScreenMirror", "Failed to launch from toggle", e)
+                    }
+                }
+                notifyOverlaySettingsChanged(mapEnabled = isChecked)
+            }
+        }
+
         positionMapCard.setOnClickListener {
             openPositionDialog(OverlayTarget.MAP)
+        }
+        positionMapMirrorCard.setOnClickListener {
+            openPositionDialog(OverlayTarget.MAP_MIRROR)
         }
         positionNavCard.setOnClickListener {
             openPositionDialog(OverlayTarget.NAVIGATION)
@@ -750,6 +805,7 @@ class MainActivity : ScaledActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleIntent(intent)
         settingsRoot.post { maybeStartGuideFromIntent() }
     }
 

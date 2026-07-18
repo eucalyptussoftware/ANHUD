@@ -25,10 +25,12 @@ import kotlin.math.roundToInt
 
 
 internal fun MainActivity.openPositionDialog(
-    target: OverlayTarget,
+    passedTarget: OverlayTarget,
     onDialogShown: ((AlertDialog, View) -> Unit)? = null,
     onDialogDismissed: (() -> Unit)? = null
 ) {
+    val target = if (passedTarget == OverlayTarget.MAP_MIRROR) OverlayTarget.MAP else passedTarget
+    val showMirrorControls = (passedTarget == OverlayTarget.MAP_MIRROR)
     val activity = this
     updateDisplayMetrics(OverlayPrefs.displayId(this))
     val dialogView = layoutInflater.inflate(R.layout.dialog_position_editor, null)
@@ -149,6 +151,68 @@ internal fun MainActivity.openPositionDialog(
     val turnSignalsSpacingValue = dialogView.findViewById<TextView>(R.id.dialogTurnSignalsSpacingValue)
     val brightnessSeek = dialogView.findViewById<SeekBar>(R.id.dialogBrightnessSeek)
     val brightnessValue = dialogView.findViewById<TextView>(R.id.dialogBrightnessValue)
+
+    val mirrorControlsLayout = dialogView.findViewById<View>(R.id.dialogMirrorControlsLayout)
+    val mirrorScaleSeek = dialogView.findViewById<SeekBar>(R.id.dialogMirrorScaleSeek)
+    val mirrorScaleValue = dialogView.findViewById<TextView>(R.id.dialogMirrorScaleValue)
+    val mirrorOffsetXSeek = dialogView.findViewById<SeekBar>(R.id.dialogMirrorOffsetXSeek)
+    val mirrorOffsetXValue = dialogView.findViewById<TextView>(R.id.dialogMirrorOffsetXValue)
+    val mirrorOffsetYSeek = dialogView.findViewById<SeekBar>(R.id.dialogMirrorOffsetYSeek)
+    val mirrorOffsetYValue = dialogView.findViewById<TextView>(R.id.dialogMirrorOffsetYValue)
+
+    if (showMirrorControls) {
+        mirrorControlsLayout?.visibility = View.VISIBLE
+        
+        // Scale is stored 1.0 to 5.0. progress = (scale - 1.0) * 100
+        val scale = OverlayPrefs.mirrorScale(this)
+        mirrorScaleSeek?.progress = ((scale - 1.0f) * 100f).roundToInt().coerceIn(0, 400)
+        mirrorScaleValue?.text = String.format("%.2fx", scale)
+        
+        // Offset X is -1000 to +1000. progress = offset + 1000
+        val offsetX = OverlayPrefs.mirrorOffsetX(this)
+        mirrorOffsetXSeek?.progress = (offsetX + 1000f).roundToInt().coerceIn(0, 2000)
+        mirrorOffsetXValue?.text = String.format("%.0fpx", offsetX)
+        
+        // Offset Y is -1000 to +1000. progress = offset + 1000
+        val offsetY = OverlayPrefs.mirrorOffsetY(this)
+        mirrorOffsetYSeek?.progress = (offsetY + 1000f).roundToInt().coerceIn(0, 2000)
+        mirrorOffsetYValue?.text = String.format("%.0fpx", offsetY)
+        
+        mirrorScaleSeek?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                val sc = 1.0f + (progress / 100f)
+                mirrorScaleValue?.text = String.format("%.2fx", sc)
+                OverlayPrefs.setMirrorScale(activity, sc)
+                activity.notifyOverlaySettingsChanged()
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+        
+        mirrorOffsetXSeek?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                val offX = progress - 1000f
+                mirrorOffsetXValue?.text = String.format("%.0fpx", offX)
+                OverlayPrefs.setMirrorOffsetX(activity, offX)
+                activity.notifyOverlaySettingsChanged()
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+        
+        mirrorOffsetYSeek?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                val offY = progress - 1000f
+                mirrorOffsetYValue?.text = String.format("%.0fpx", offY)
+                OverlayPrefs.setMirrorOffsetY(activity, offY)
+                activity.notifyOverlaySettingsChanged()
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+    } else {
+        mirrorControlsLayout?.visibility = View.GONE
+    }
 
     val navPosition = OverlayPrefs.navPositionDp(this)
     val arrowPosition = OverlayPrefs.arrowPositionDp(this)
@@ -371,8 +435,9 @@ internal fun MainActivity.openPositionDialog(
         updatingTurnSignalsSpacingSeek = false
     }
 
-    val dialogTitle = when (target) {
+    val dialogTitle = when (passedTarget) {
         OverlayTarget.MAP -> getString(R.string.position_map_block_label)
+        OverlayTarget.MAP_MIRROR -> getString(R.string.position_map_mirror_label)
         OverlayTarget.NAVIGATION -> getString(R.string.position_nav_block_label)
         OverlayTarget.LANE_GUIDANCE -> getString(R.string.position_lane_guidance_block_label)
         OverlayTarget.ARROW -> getString(R.string.position_arrow_block_label)
@@ -441,7 +506,7 @@ internal fun MainActivity.openPositionDialog(
         containerHeightRow.visibility = View.GONE
     }
 
-    if (target == OverlayTarget.MAP) {
+    if (target == OverlayTarget.MAP && passedTarget != OverlayTarget.MAP_MIRROR) {
         roadEventsRow.visibility = View.VISIBLE
         tripStatusRow.visibility = View.VISIBLE
         mapArrowOffsetRow.visibility = View.VISIBLE

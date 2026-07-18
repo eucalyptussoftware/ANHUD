@@ -160,6 +160,10 @@ object OverlayPrefs {
     private const val KEY_TRAFFIC_LIGHT_MAX_ACTIVE = "overlay_traffic_light_max_active"
     private const val KEY_NATIVE_NAV_ENABLED = "native_nav_enabled"
     private const val KEY_MAP_ENABLED = "overlay_map_enabled"
+    private const val KEY_MIRROR_ENABLED = "overlay_mirror_enabled"
+    private const val KEY_MIRROR_SCALE = "overlay_mirror_scale"
+    private const val KEY_MIRROR_OFFSET_X = "overlay_mirror_offset_x"
+    private const val KEY_MIRROR_OFFSET_Y = "overlay_mirror_offset_y"
     private const val KEY_LANE_GUIDANCE_SHOW_DISTANCE = "overlay_lane_guidance_show_distance"
     private const val KEY_CAMERA_TIMEOUT_NEAR = "camera_timeout_near"
     private const val KEY_CAMERA_TIMEOUT_FAR = "camera_timeout_far"
@@ -1355,6 +1359,40 @@ object OverlayPrefs {
         prefs(context).edit()
             .putBoolean(KEY_MAP_ENABLED, enabled)
             .apply()
+    }
+
+    fun mirrorEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_MIRROR_ENABLED, false)
+    }
+
+    fun setMirrorEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit()
+            .putBoolean(KEY_MIRROR_ENABLED, enabled)
+            .apply()
+    }
+
+    fun mirrorScale(context: Context): Float {
+        return prefs(context).getFloat(KEY_MIRROR_SCALE, 1.0f)
+    }
+
+    fun setMirrorScale(context: Context, scale: Float) {
+        prefs(context).edit().putFloat(KEY_MIRROR_SCALE, scale).apply()
+    }
+
+    fun mirrorOffsetX(context: Context): Float {
+        return prefs(context).getFloat(KEY_MIRROR_OFFSET_X, 0f)
+    }
+
+    fun setMirrorOffsetX(context: Context, offset: Float) {
+        prefs(context).edit().putFloat(KEY_MIRROR_OFFSET_X, offset).apply()
+    }
+
+    fun mirrorOffsetY(context: Context): Float {
+        return prefs(context).getFloat(KEY_MIRROR_OFFSET_Y, 0f)
+    }
+
+    fun setMirrorOffsetY(context: Context, offset: Float) {
+        prefs(context).edit().putFloat(KEY_MIRROR_OFFSET_Y, offset).apply()
     }
 
     fun cameraTimeoutNear(context: Context): Int {
