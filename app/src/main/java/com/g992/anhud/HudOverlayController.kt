@@ -1749,7 +1749,8 @@ class HudOverlayController(private val context: Context) {
             containerHeightPx,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -3879,47 +3880,79 @@ class HudOverlayController(private val context: Context) {
                 val offX = OverlayPrefs.mirrorOffsetX(displayContext)
                 val offY = OverlayPrefs.mirrorOffsetY(displayContext)
 
-                val baseWidth = widthPx
-                val baseHeight = (widthPx * (defaultMetrics.heightPixels.toFloat() / defaultMetrics.widthPixels)).toInt()
+                // Fit the device's screen aspect ratio inside the container (widthPx x
+                // heightPx) first - letterbox/pillarbox as needed - so at sc=1f/no offset
+                // the mirrored image sits fully within the container's own bounds instead
+                // of only matching its width and overflowing/underflowing vertically.
+                val deviceWidth = defaultMetrics.widthPixels.coerceAtLeast(1)
+                val deviceHeight = defaultMetrics.heightPixels.coerceAtLeast(1)
+                val deviceAspect = deviceWidth.toFloat() / deviceHeight
+                val containerAspect = widthPx.toFloat() / heightPx.coerceAtLeast(1)
 
-                val targetWidth = (baseWidth * sc).toInt()
-                val targetHeight = (baseHeight * sc).toInt()
+                val baseWidth: Int
+                val baseHeight: Int
+                if (deviceAspect > containerAspect) {
+                    baseWidth = widthPx
+                    baseHeight = (widthPx / deviceAspect).roundToInt().coerceAtLeast(1)
+                } else {
+                    baseHeight = heightPx
+                    baseWidth = (heightPx * deviceAspect).roundToInt().coerceAtLeast(1)
+                }
+
+                val targetWidth = (baseWidth * sc).roundToInt().coerceAtLeast(1)
+                val targetHeight = (baseHeight * sc).roundToInt().coerceAtLeast(1)
 
                 val centerXMargin = (widthPx - targetWidth) / 2
                 val centerYMargin = (heightPx - targetHeight) / 2
 
-                val finalLeftMargin = (centerXMargin + offX).toInt()
-                val finalTopMargin = (centerYMargin + offY).toInt()
+                val finalLeftMargin = (centerXMargin + offX).roundToInt()
+                val finalTopMargin = (centerYMargin + offY).roundToInt()
 
-                val surfaceView = if (mapContent.childCount > 0) mapContent.getChildAt(0) as? android.view.SurfaceView else null
-                if (surfaceView == null) {
-                    val sv = android.view.SurfaceView(displayContext).apply {
+                val textureView = if (mapContent.childCount > 0) mapContent.getChildAt(0) as? android.view.TextureView else null
+                if (textureView == null) {
+                    val tv = android.view.TextureView(displayContext).apply {
                         layoutParams = android.widget.FrameLayout.LayoutParams(targetWidth, targetHeight).apply {
                             leftMargin = finalLeftMargin
                             topMargin = finalTopMargin
                         }
-                        holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                            override fun surfaceCreated(holder: android.view.SurfaceHolder) {
-                                val surface = holder.surface
-                                ScreenMirrorManager.startMirroring(displayContext, surface, targetWidth, targetHeight, defaultMetrics)
+                        surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
+                            override fun onSurfaceTextureAvailable(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {
+                                surface.setDefaultBufferSize(baseWidth, baseHeight)
+                                val s = android.view.Surface(surface)
+                                ScreenMirrorManager.startMirroring(displayContext, s, baseWidth, baseHeight, defaultMetrics)
                             }
-                            override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, w: Int, h: Int) {}
-                            override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                            override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
+                            override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
                                 ScreenMirrorManager.stopMirroring()
+                                return true
                             }
-                        })
+                            override fun onSurfaceTextureUpdated(surface: android.graphics.SurfaceTexture) {}
+                        }
                     }
                     mapContent.removeAllViews()
-                    mapContent.addView(sv)
+                    mapContent.addView(tv)
                 } else {
-                    surfaceView.layoutParams = (surfaceView.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+                    textureView.layoutParams = (textureView.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
                         width = targetWidth
                         height = targetHeight
                         leftMargin = finalLeftMargin
                         topMargin = finalTopMargin
                     }
+                    val st = textureView.surfaceTexture
+                    if (textureView.isAvailable && !ScreenMirrorManager.isMirroring()) {
+                        if (st != null) {
+                            st.setDefaultBufferSize(baseWidth, baseHeight)
+                            val s = android.view.Surface(st)
+                            ScreenMirrorManager.startMirroring(displayContext, s, baseWidth, baseHeight, defaultMetrics)
+                        }
+                    } else {
+                        // Container size (and therefore the fitted base size) can change
+                        // across recompositions - keep the capture buffer's dimensions in
+                        // sync with it, not just the virtual display's logical size.
+                        st?.setDefaultBufferSize(baseWidth, baseHeight)
+                        ScreenMirrorManager.resizeMirror(baseWidth, baseHeight)
+                    }
                     mapContent.requestLayout()
-                    ScreenMirrorManager.resizeMirror(targetWidth, targetHeight)
                 }
             } else {
                 ensureLocalMapController(displayContext, mapContent).apply {
