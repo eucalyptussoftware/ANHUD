@@ -12,35 +12,7 @@ from pathlib import Path
 BACKUP_DIR_NAME = ".anhud_waze_hud_backup"
 MARKER = "ANHUD_WAZE_HUD_PATCH"
 
-HUD_SKIN_LUA = """-- HUD SKIN: Black background, roads only
-local Palette = {
-    base_default = rgb(0x00FF00),
-    black = rgb(0x000000),
-    white = rgb(0x00FF00),
-    
-    map_background = rgb(0x000000),
-    map_missing = rgb(0x000000),
-    
-    labels = rgb(0x00FF00),
-    labels_strong = rgb(0x00FF00),
-    labels_bgcolor = rgba(0x00000000),
-    
-    freeways = rgb(0x00CC00),
-    primary = rgb(0x009900),
-    secondary = rgb(0x006600),
-    highways = rgb(0x009900),
-    street = rgb(0x004400),
-    
-    cities = rgb(0x000000),
-    parks = rgb(0x000000),
-    sea = rgb(0x000000),
-    lakes = rgb(0x000000),
-    rivers = rgb(0x000000),
-    parking_lots = rgb(0x000000),
-    stations = rgb(0x000000),
-}
-return Palette
-"""
+
 
 WAZE_HUD_MODE_SMALI = """.class public Lcom/waze/WazeHudMode;
 .super Ljava/lang/Object;
@@ -229,14 +201,65 @@ def patch(root: Path) -> None:
     waze_hud_diag.write_text(WAZE_HUD_DIAG_SMALI)
     print(f"Created {waze_hud_diag}")
     
-    # Write Lua skin
+
+    # Patch skin_values.night.lua
     skin_dir = root / "assets/res/skins/default"
-    if skin_dir.exists():
-        hud_skin = skin_dir / "skin_values.hud.lua"
-        hud_skin.write_text(HUD_SKIN_LUA)
-        print(f"Created {hud_skin}")
+    night_skin = skin_dir / "skin_values.night.lua"
+    if night_skin.exists():
+        backup(root, night_skin)
+        lua_content = night_skin.read_text()
+        
+        replacements = {
+            'map_background': '0x000000',
+            'map_missing': '0x000000',
+            'labels': '0x00FF00',
+            'labels_strong': '0x00FF00',
+            'labels_bgcolor': '0x00000000',
+            'freeways': '0x00FF00',
+            'primary': '0x00CC00',
+            'secondary': '0x009900',
+            'highways': '0x009900',
+            'street': '0x007700',
+            'pedestrian': '0x000000',
+            'walkway': '0x000000',
+            'alleys': '0x000000',
+            'ramps': '0x00CC00',
+            'parking': '0x000000',
+            'parking_lots': '0x000000',
+            'parking_lots_pins': '0x000000',
+            'railroads': '0x000000',
+            'ferry_stroke': '0x000000',
+            'cities': '0x000000',
+            'stations': '0x000000',
+            'parks': '0x000000',
+            'sea': '0x000000',
+            'lakes': '0x000000',
+            'rivers': '0x000000',
+            'label_station': '0x00FF00',
+            'label_cities': '0x00FF00',
+            'label_vegetation': '0x00FF00',
+            'label_water': '0x00FF00',
+            'navigation': '0x00FFFF'
+        }
+        
+        import re
+        for key, color in replacements.items():
+            pattern = rf'(\b{key}\s*=\s*rgb\w*\()[^)]+(\))'
+            lua_content = re.sub(pattern, rf'\g<1>{color}\g<2>', lua_content)
+            
+        night_skin.write_text(lua_content)
+        print(f"Patched {night_skin} to high-contrast green-on-black HUD theme.")
+        
+        # Backup and delete optimized binary schemas so Waze falls back to our Lua skin!
+        for schema_name in ["schema_night", "schema_night_gray_scale"]:
+            schema_file = skin_dir / schema_name
+            if schema_file.exists():
+                backup(root, schema_file)
+                schema_file.unlink()
+                print(f"Backed up and removed binary {schema_file} to force Lua compilation.")
     else:
-        print(f"Warning: {skin_dir} does not exist. Please ensure this is a Waze APK.")
+        print(f"Warning: {night_skin} does not exist.")
+
 
     print("Patch applied successfully.")
 
@@ -246,14 +269,15 @@ def restore(root: Path) -> None:
         print("No backup directory found. Cannot restore.")
         return
         
-    for backup_file in backup_dir.rglob("*.smali"):
-        target_file = root / backup_file.relative_to(backup_dir)
-        target_file.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(backup_file, target_file)
-        print(f"Restored {target_file}")
+    for backup_file in backup_dir.rglob("*"):
+        if backup_file.is_file():
+            target_file = root / backup_file.relative_to(backup_dir)
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(backup_file, target_file)
+            print(f"Restored {target_file}")
         
     # Remove injected files
-    for f in ["smali_classes4/com/waze/WazeHudMode.smali", "smali_classes4/com/waze/WazeHudDiag.smali", "smali/com/waze/WazeHudMode.smali", "smali/com/waze/WazeHudDiag.smali", "assets/res/skins/default/skin_values.hud.lua"]:
+    for f in ["smali_classes4/com/waze/WazeHudMode.smali", "smali_classes4/com/waze/WazeHudDiag.smali", "smali/com/waze/WazeHudMode.smali", "smali/com/waze/WazeHudDiag.smali",]:
         p = root / f
         if p.exists():
             p.unlink()
