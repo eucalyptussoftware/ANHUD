@@ -3880,27 +3880,34 @@ class HudOverlayController(private val context: Context) {
                 val offX = OverlayPrefs.mirrorOffsetX(displayContext)
                 val offY = OverlayPrefs.mirrorOffsetY(displayContext)
 
-                // Fit the device's screen aspect ratio inside the container (widthPx x
-                // heightPx) first - letterbox/pillarbox as needed - so at sc=1f/no offset
-                // the mirrored image sits fully within the container's own bounds instead
-                // of only matching its width and overflowing/underflowing vertically.
-                val deviceWidth = defaultMetrics.widthPixels.coerceAtLeast(1)
-                val deviceHeight = defaultMetrics.heightPixels.coerceAtLeast(1)
-                val deviceAspect = deviceWidth.toFloat() / deviceHeight
+                // Capture at the device's native resolution - this is what
+                // createVirtualDisplay()/setDefaultBufferSize() use. Never shrink this to
+                // the container's size: doing so bakes a low-res capture of Waze's UI
+                // (text, icons, arrows) that no amount of later scaling can sharpen back
+                // up. All "fit inside the container" sizing happens separately below, as
+                // the TextureView's *display* size - the GPU downscales the sharp native
+                // buffer down to that, which looks far better than upscaling a small one.
+                val captureWidth = defaultMetrics.widthPixels.coerceAtLeast(1)
+                val captureHeight = defaultMetrics.heightPixels.coerceAtLeast(1)
+                val deviceAspect = captureWidth.toFloat() / captureHeight
                 val containerAspect = widthPx.toFloat() / heightPx.coerceAtLeast(1)
 
-                val baseWidth: Int
-                val baseHeight: Int
+                // Fit that aspect ratio inside the container (widthPx x heightPx) -
+                // letterbox/pillarbox as needed - so at sc=1f/no offset the mirrored
+                // image sits fully within the container's own bounds instead of
+                // overflowing/underflowing vertically or horizontally.
+                val fitWidth: Int
+                val fitHeight: Int
                 if (deviceAspect > containerAspect) {
-                    baseWidth = widthPx
-                    baseHeight = (widthPx / deviceAspect).roundToInt().coerceAtLeast(1)
+                    fitWidth = widthPx
+                    fitHeight = (widthPx / deviceAspect).roundToInt().coerceAtLeast(1)
                 } else {
-                    baseHeight = heightPx
-                    baseWidth = (heightPx * deviceAspect).roundToInt().coerceAtLeast(1)
+                    fitHeight = heightPx
+                    fitWidth = (heightPx * deviceAspect).roundToInt().coerceAtLeast(1)
                 }
 
-                val targetWidth = (baseWidth * sc).roundToInt().coerceAtLeast(1)
-                val targetHeight = (baseHeight * sc).roundToInt().coerceAtLeast(1)
+                val targetWidth = (fitWidth * sc).roundToInt().coerceAtLeast(1)
+                val targetHeight = (fitHeight * sc).roundToInt().coerceAtLeast(1)
 
                 val centerXMargin = (widthPx - targetWidth) / 2
                 val centerYMargin = (heightPx - targetHeight) / 2
@@ -3917,9 +3924,9 @@ class HudOverlayController(private val context: Context) {
                         }
                         surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
                             override fun onSurfaceTextureAvailable(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {
-                                surface.setDefaultBufferSize(baseWidth, baseHeight)
+                                surface.setDefaultBufferSize(captureWidth, captureHeight)
                                 val s = android.view.Surface(surface)
-                                ScreenMirrorManager.startMirroring(displayContext, s, baseWidth, baseHeight, defaultMetrics)
+                                ScreenMirrorManager.startMirroring(displayContext, s, captureWidth, captureHeight, defaultMetrics)
                             }
                             override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
                             override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
@@ -3941,17 +3948,14 @@ class HudOverlayController(private val context: Context) {
                     val st = textureView.surfaceTexture
                     if (textureView.isAvailable && !ScreenMirrorManager.isMirroring()) {
                         if (st != null) {
-                            st.setDefaultBufferSize(baseWidth, baseHeight)
+                            st.setDefaultBufferSize(captureWidth, captureHeight)
                             val s = android.view.Surface(st)
-                            ScreenMirrorManager.startMirroring(displayContext, s, baseWidth, baseHeight, defaultMetrics)
+                            ScreenMirrorManager.startMirroring(displayContext, s, captureWidth, captureHeight, defaultMetrics)
                         }
-                    } else {
-                        // Container size (and therefore the fitted base size) can change
-                        // across recompositions - keep the capture buffer's dimensions in
-                        // sync with it, not just the virtual display's logical size.
-                        st?.setDefaultBufferSize(baseWidth, baseHeight)
-                        ScreenMirrorManager.resizeMirror(baseWidth, baseHeight)
                     }
+                    // No resizeMirror() call needed here: the capture buffer is fixed at
+                    // native resolution and doesn't need to track container size changes -
+                    // only the TextureView's layout (display) size above does.
                     mapContent.requestLayout()
                 }
             } else {
