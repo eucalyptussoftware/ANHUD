@@ -21,6 +21,7 @@ class NavigationService : Service() {
             addAction(NavigationReceiver.ACTION_NAV_UPDATE)
             addAction(NavigationReceiver.ACTION_NAV_UPDATE_DEBUG)
             addAction(NavigationReceiver.ACTION_WAZE_NAV_UPDATE)
+            addAction(NavigationReceiver.ACTION_WAZE_LANE_GUIDANCE)
             addAction(NavigationReceiver.ACTION_YANDEX_MANEUVER)
             addAction(NavigationReceiver.ACTION_YANDEX_NEXT_TEXT)
             addAction(NavigationReceiver.ACTION_YANDEX_NEXT_STREET)

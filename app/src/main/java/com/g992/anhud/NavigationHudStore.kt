@@ -182,7 +182,8 @@ object NavigationHudStore {
                 trafficLights = emptyList(),
                 turnSignalLeft = false,
                 turnSignalRight = false,
-                turnSignalHazard = false
+                turnSignalHazard = false,
+                lanes = emptyList()
             )
         }
     }

@@ -440,6 +440,39 @@ class NavigationReceiver : BroadcastReceiver() {
                     )
                 }
             }
+            ACTION_WAZE_LANE_GUIDANCE -> {
+                val laneData = intent.getIntArrayExtra("laneData")
+                if (laneData != null && laneData.isNotEmpty() && laneData.size % 3 == 0) {
+                    val laneMap = mutableMapOf<Int, MutableList<Pair<Int, Boolean>>>()
+                    for (i in 0 until laneData.size step 3) {
+                        val idx = laneData[i]
+                        val angle = laneData[i+1]
+                        val isSelected = laneData[i+2] == 1
+                        val list = laneMap.getOrPut(idx) { mutableListOf() }
+                        list.add(Pair(angle, isSelected))
+                    }
+                    val laneInfoList = laneMap.map { (_, list) ->
+                        val directions = list.map { angleToAnhudDirection(it.first) }.distinct()
+                        val highlighted = list.any { it.second }
+                        LaneInfo(directions, highlighted)
+                    }
+                    Log.d(TAG, "Waze lane guidance update: ${laneInfoList.size} lanes")
+                    NavigationHudStore.update { state ->
+                        state.copy(
+                            lanes = laneInfoList,
+                            lastUpdated = System.currentTimeMillis()
+                        )
+                    }
+                } else {
+                    Log.d(TAG, "Waze lane guidance cleared (empty or invalid laneData)")
+                    NavigationHudStore.update { state ->
+                        state.copy(
+                            lanes = emptyList(),
+                            lastUpdated = System.currentTimeMillis()
+                        )
+                    }
+                }
+            }
             ACTION_NATIVE_NAV_STOP -> {
                 endNavigation(context, action, "штатная навигация: стоп")
             }
@@ -603,6 +636,7 @@ class NavigationReceiver : BroadcastReceiver() {
         const val ACTION_NAV_UPDATE = "plus.monjaro.NAVIGATION_UPDATE"
         const val ACTION_NAV_UPDATE_DEBUG = "debug.monjaro.NAVIGATION_UPDATE"
         const val ACTION_WAZE_NAV_UPDATE = "com.g992.anhud.WAZE_NAV_UPDATE"
+        const val ACTION_WAZE_LANE_GUIDANCE = "com.g992.anhud.WAZE_LANE_GUIDANCE"
 
         const val EXTRA_TITLE = "title"
         const val EXTRA_TEXT = "text"
@@ -895,6 +929,25 @@ class NavigationReceiver : BroadcastReceiver() {
                 intent.getParcelableExtra(key)
             }
         }
+        private fun angleToAnhudDirection(angle: Int): Int {
+            var norm = angle % 360
+            if (norm > 180) norm -= 360
+            if (norm < -180) norm += 360
+
+            return when {
+                norm in -10..10 -> 0     // Straight
+                norm in -59..-11 -> 1    // Left 45
+                norm in -109..-60 -> 2   // Left 90
+                norm in -169..-110 -> 3  // Left 135
+                norm in -180..-170 -> 7  // Left 180
+                norm in 11..59 -> 4      // Right 45
+                norm in 60..109 -> 5     // Right 90
+                norm in 110..169 -> 6    // Right 135
+                norm in 170..180 -> 7    // Right 180 (mapped to Left 180 as best fit)
+                else -> 0
+            }
+        }
+
 
         private fun formatExtras(intent: Intent): String {
             val extras = intent.extras ?: return "{}"

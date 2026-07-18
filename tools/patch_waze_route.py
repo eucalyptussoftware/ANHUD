@@ -255,6 +255,107 @@ ROUTE_METHOD = r'''
     :end
     return-void
 .end method
+
+# ANHUD_WAZE_ROUTE_PATCH: publish Waze's navigation lanes to ANHUD.
+.method public static publishLanes(Landroid/content/Context;Lcom/waze/jni/protos/NavigationLaneList;)V
+    .locals 12
+
+    if-nez p0, :end
+    if-nez p1, :end
+
+    invoke-virtual {p1}, Lcom/waze/jni/protos/NavigationLaneList;->getNavigationLaneCount()I
+    move-result v0
+    if-nez v0, :end
+
+    # 1. Count Total Angles
+    const/4 v1, 0x0 # totalAngles
+    const/4 v2, 0x0 # i
+
+    :goto_count_loop
+    if-ge v2, v0, :cond_count_loop_end
+
+    invoke-virtual {p1, v2}, Lcom/waze/jni/protos/NavigationLaneList;->getNavigationLane(I)Lcom/waze/jni/protos/NavigationLane;
+    move-result-object v3
+    invoke-virtual {v3}, Lcom/waze/jni/protos/NavigationLane;->getAngleCount()I
+    move-result v4
+    add-int/2addr v1, v4
+
+    add-int/lit8 v2, v2, 0x1
+    goto :goto_count_loop
+
+    :cond_count_loop_end
+
+    # 2. Allocate Array (Size = totalAngles * 3)
+    if-nez v1, :end
+
+    mul-int/lit8 v5, v1, 0x3
+    new-array v5, v5, [I
+
+    # 3. Fill Array
+    const/4 v6, 0x0 # arrayIndex
+    const/4 v2, 0x0 # i (reset)
+
+    :goto_fill_loop
+    if-ge v2, v0, :cond_fill_loop_end
+
+    invoke-virtual {p1, v2}, Lcom/waze/jni/protos/NavigationLaneList;->getNavigationLane(I)Lcom/waze/jni/protos/NavigationLane;
+    move-result-object v3
+
+    invoke-virtual {v3}, Lcom/waze/jni/protos/NavigationLane;->getIndex()I
+    move-result v7 # laneIndex
+
+    invoke-virtual {v3}, Lcom/waze/jni/protos/NavigationLane;->getAngleCount()I
+    move-result v4 # angleCount
+
+    const/4 v8, 0x0 # j (inner loop)
+
+    :goto_inner_loop
+    if-ge v8, v4, :cond_inner_loop_end
+
+    invoke-virtual {v3, v8}, Lcom/waze/jni/protos/NavigationLane;->getAngle(I)Lcom/waze/jni/protos/NavigationLaneAngle;
+    move-result-object v9 # angleObj
+
+    # Write Index
+    aput v7, v5, v6
+    add-int/lit8 v6, v6, 0x1
+
+    # Write Angle
+    invoke-virtual {v9}, Lcom/waze/jni/protos/NavigationLaneAngle;->getAngle()I
+    move-result v10
+    aput v10, v5, v6
+    add-int/lit8 v6, v6, 0x1
+
+    # Write Selected
+    invoke-virtual {v9}, Lcom/waze/jni/protos/NavigationLaneAngle;->getIsSelected()Z
+    move-result v10
+    aput v10, v5, v6
+    add-int/lit8 v6, v6, 0x1
+
+    add-int/lit8 v8, v8, 0x1
+    goto :goto_inner_loop
+
+    :cond_inner_loop_end
+    add-int/lit8 v2, v2, 0x1
+    goto :goto_fill_loop
+
+    :cond_fill_loop_end
+
+    # Send Intent
+    new-instance v2, Landroid/content/Intent;
+    const-string v3, "com.g992.anhud.WAZE_LANE_GUIDANCE"
+    invoke-direct {v2, v3}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
+
+    const-string v3, "com.g992.anhud"
+    invoke-virtual {v2, v3}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v3, "laneData"
+    invoke-virtual {v2, v3, v5}, Landroid/content/Intent;->putExtra(Ljava/lang/String;[I)Landroid/content/Intent;
+
+    invoke-virtual {p0, v2}, Landroid/content/Context;->sendBroadcast(Landroid/content/Intent;)V
+
+    :end
+    return-void
+.end method
 '''
 
 ROUTE_HOOK = '''.method onNavigationRouteChanged(Lcom/waze/jni/protos/navigate/NavigationRoute;)V
@@ -592,7 +693,8 @@ def patch(root: Path) -> None:
     )
 
     hud.write_text(patched_hud + ROUTE_METHOD)
-    nav.write_text(
+    import re
+    patched_nav = (
         nav_text
             .replace(route_anchor, ROUTE_HOOK, 1)
             .replace(eta_seconds_anchor, eta_seconds_hook, 1)
@@ -600,6 +702,17 @@ def patch(root: Path) -> None:
             .replace(eta_distance_anchor, eta_distance_hook, 1)
             .replace(time_string_anchor, time_string_hook, 1)
     )
+
+    lane_method_sig = r'\.method private synthetic lambda\$onLanesGuidanceChanged\$0\(Lcom/waze/jni/protos/NavigationLaneList;\)LDc\/N;\s+\.locals \d+'
+    if "HudControl;->publishLanes" not in patched_nav and re.search(lane_method_sig, patched_nav):
+        injection_code = """
+    # Inject HUD Lane Update
+    sget-object v0, Lcom/waze/mobile/WazeMobileApplication;->mContext:Landroid/content/Context;
+    invoke-static {v0, p1}, Lcom/waze/HudControl;->publishLanes(Landroid/content/Context;Lcom/waze/jni/protos/NavigationLaneList;)V
+    """
+        patched_nav = re.sub(lane_method_sig, lambda m: m.group(0) + injection_code, patched_nav, count=1)
+        print("  - Injected Lane Guidance hook")
+    nav.write_text(patched_nav)
     canvas.write_text(patched_canvas)
     print(f"Patched {root}")
     print("Rebuild and sign the Waze APK before installing it.")
