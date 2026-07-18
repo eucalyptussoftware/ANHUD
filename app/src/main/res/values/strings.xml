@@ -419,6 +419,8 @@
     <string name="lanes_block_label">Полосы движения</string>
     <string name="battery_soc_block_label">Блок заряда батареи</string>
     <string name="battery_soc_label">Уровень заряда батареи</string>
+    <string name="time_24h_format_label">24-часовой формат времени</string>
+    <string name="time_24h_format_hint">Переключает отображение времени прибытия между 12-часовым (AM/PM) и 24-часовым</string>
     <string name="battery_soc_preview">--%</string>
     <string name="engine_power_block_label">Блок мощности</string>
     <string name="engine_power_label">Мощность</string>

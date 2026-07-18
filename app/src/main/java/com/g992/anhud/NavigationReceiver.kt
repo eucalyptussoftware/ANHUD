@@ -136,9 +136,17 @@ class NavigationReceiver : BroadcastReceiver() {
                         } else {
                             secondary
                         },
-                        arrival = wazeArrival.ifBlank { state.arrival },
+                        arrival = if (action == ACTION_WAZE_NAV_UPDATE) {
+                            if (wazeTime.isNotBlank()) WazeFormatter.formatWazeArrivalTime(wazeTime) else state.arrival
+                        } else {
+                            wazeArrival.ifBlank { state.arrival }
+                        },
                         distance = wazeRemainingDistance.ifBlank { state.distance },
-                        time = wazeTime.ifBlank { state.time },
+                        time = if (action == ACTION_WAZE_NAV_UPDATE) {
+                            if (wazeArrival.isNotBlank()) WazeFormatter.formatWazeRemainingTime(wazeArrival) else state.time
+                        } else {
+                            wazeTime.ifBlank { state.time }
+                        },
                         rawArrival = wazeArrival.ifBlank { state.rawArrival },
                         rawDistance = wazeRemainingDistance.ifBlank { state.rawDistance },
                         rawTime = wazeTime.ifBlank { state.rawTime },
@@ -1378,6 +1386,7 @@ class NavigationReceiver : BroadcastReceiver() {
             return days * 86400 + hours * 3600 + minutes * 60 + seconds
         }
 
+
         private fun predictManeuverType(context: Context, bitmap: Bitmap): String {
             val result = ManeuverRecognition.analyze(context, bitmap)
             if (result.top.isNotEmpty()) {
@@ -1386,5 +1395,93 @@ class NavigationReceiver : BroadcastReceiver() {
             }
             return result.bestName
         }
+    }
+}
+
+object WazeFormatter {
+    fun formatWazeArrivalTime(rawTime: String): String {
+        val text = rawTime.replace("ETA", "", ignoreCase = true).trim()
+
+        val amPmRegex = Regex("(?i)(\\d{1,2})[:.](\\d{2})\\s*([ap])\\.?\\s*m\\.?", RegexOption.IGNORE_CASE)
+        val matchAmPm = amPmRegex.find(text)
+        if (matchAmPm != null) {
+            val hour = matchAmPm.groupValues[1].toIntOrNull() ?: 12
+            val minute = matchAmPm.groupValues[2].toIntOrNull() ?: 0
+            val ampm = matchAmPm.groupValues[3].lowercase(Locale.US) + "m"
+            return String.format(Locale.US, "%d:%02d%s", hour, minute, ampm)
+        }
+
+        val twentyFourRegex = Regex("(\\d{1,2})[:.](\\d{2})")
+        val match24 = twentyFourRegex.find(text)
+        if (match24 != null) {
+            val hour24 = match24.groupValues[1].toIntOrNull() ?: 0
+            val minute = match24.groupValues[2].toIntOrNull() ?: 0
+            val ampm = if (hour24 >= 12) "pm" else "am"
+            val hour12 = when {
+                hour24 == 0 -> 12
+                hour24 > 12 -> hour24 - 12
+                else -> hour24
+            }
+            return String.format(Locale.US, "%d:%02d%s", hour12, minute, ampm)
+        }
+
+        return text.lowercase(Locale.US).replace(" ", "")
+    }
+
+    fun formatWazeRemainingTime(rawArrival: String): String {
+        val seconds = parseEtaSeconds(rawArrival) ?: 0
+        if (seconds <= 0) {
+            val numOnly = rawArrival.trim().toIntOrNull()
+            return if (numOnly != null) {
+                "$numOnly min"
+            } else {
+                rawArrival
+            }
+        }
+        val totalMinutes = seconds / 60
+        val hours = totalMinutes / 60
+        val mins = totalMinutes % 60
+        return if (hours > 0) {
+            "$hours h $mins min"
+        } else {
+            "$totalMinutes min"
+        }
+    }
+
+    private fun parseEtaSeconds(text: String): Int? {
+        val normalized = text.lowercase(Locale.getDefault())
+        val days = Regex("(\\d+)\\s*(?:дн\\.?|день|дня|дней|д|day|days)(?!\\p{L})")
+            .find(normalized)
+            ?.groupValues
+            ?.get(1)
+            ?.toIntOrNull()
+            ?: 0
+        if (":" in normalized) {
+            val parts = normalized.split(":").map { it.trim() }
+            if (parts.size == 2) {
+                val first = parts[0].toIntOrNull() ?: return null
+                val second = parts[1].toIntOrNull() ?: return null
+                val base = if (first >= 1) {
+                    first * 3600 + second * 60
+                } else {
+                    first * 60 + second
+                }
+                return days * 86400 + base
+            }
+            if (parts.size == 3) {
+                val hours = parts[0].toIntOrNull() ?: return null
+                val minutes = parts[1].toIntOrNull() ?: return null
+                val seconds = parts[2].toIntOrNull() ?: return null
+                return days * 86400 + hours * 3600 + minutes * 60 + seconds
+            }
+        }
+        val hours = Regex("(\\d+)\\s*(?:ч|h|hr|hrs)(?!\\p{L})").find(normalized)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val minutes = Regex("(\\d+)\\s*(?:мин|min|mins|m)(?!\\p{L})").find(normalized)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val seconds = Regex("(\\d+)\\s*(?:сек|sec|secs|s)(?!\\p{L})").find(normalized)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        if (days == 0 && hours == 0 && minutes == 0 && seconds == 0) {
+            val fallback = Regex("(\\d+)").find(normalized)?.groupValues?.get(1)?.toIntOrNull()
+            return fallback?.let { it * 60 }
+        }
+        return days * 86400 + hours * 3600 + minutes * 60 + seconds
     }
 }

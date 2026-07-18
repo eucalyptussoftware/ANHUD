@@ -110,6 +110,7 @@ class SettingsActivity : ScaledActivity() {
     private lateinit var speedCorrectionSeek: SeekBar
     private lateinit var speedCorrectionValue: TextView
     private lateinit var speedFromGpsCheck: SwitchCompat
+    private lateinit var time24hFormatSwitch: SwitchCompat
     private lateinit var infoMirrorStarsheep7Switch: SwitchCompat
     private lateinit var lanesEnabledSwitch: SwitchCompat
     private lateinit var batterySocSwitch: SwitchCompat
@@ -335,6 +336,7 @@ class SettingsActivity : ScaledActivity() {
         speedCorrectionValue = findViewById(R.id.speedCorrectionValue)
         speedFromGpsCheck = findViewById(R.id.speedFromGpsCheck)
         infoMirrorStarsheep7Switch = findViewById(R.id.infoMirrorStarsheep7Switch)
+        time24hFormatSwitch = findViewById(R.id.time24hFormatSwitch)
         lanesEnabledSwitch = findViewById(R.id.lanesEnabledSwitch)
         batterySocSwitch = findViewById(R.id.batterySocSwitch)
         engineRpmSwitch = findViewById(R.id.engineRpmSwitch)
@@ -651,6 +653,12 @@ class SettingsActivity : ScaledActivity() {
             if (isSyncingUi) return@setOnCheckedChangeListener
             OverlayPrefs.setInfoMirrorStarsheep7Enabled(this, isChecked)
             broadcastInfoMirrorStarsheep7(isChecked)
+        }
+
+        time24hFormatSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) return@setOnCheckedChangeListener
+            OverlayPrefs.setTime24hFormat(this, isChecked)
+            broadcastOverlayPrefs()
         }
 
         lanesEnabledSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -3530,6 +3538,7 @@ class SettingsActivity : ScaledActivity() {
             speedCorrectionValue.text = getString(R.string.speed_correction_value, correction)
             speedFromGpsCheck.isChecked = OverlayPrefs.speedFromGps(this)
             infoMirrorStarsheep7Switch.isChecked = OverlayPrefs.infoMirrorStarsheep7Enabled(this)
+            time24hFormatSwitch.isChecked = OverlayPrefs.isTime24hFormat(this)
             lanesEnabledSwitch.isChecked = OverlayPrefs.lanesEnabled(this)
             batterySocSwitch.isChecked = OverlayPrefs.batteryEnabled(this)
             engineRpmSwitch.isChecked = OverlayPrefs.rpmEnabled(this)

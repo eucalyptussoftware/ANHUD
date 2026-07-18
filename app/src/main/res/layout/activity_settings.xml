@@ -511,6 +511,23 @@
                     android:textSize="14sp" />
 
                 <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/time24hFormatSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/time_24h_format_label"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/time_24h_format_hint"
+                    android:textColor="#808080"
+                    android:textSize="12sp" />
+
+                <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/lanesEnabledSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

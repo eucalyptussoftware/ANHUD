@@ -369,6 +369,7 @@ object PrefsJson {
         putInt("hide_turn_dynamic_60_to_100_meters", dynamicHideTurnDistances.from60To100Kmh)
         putInt("hide_turn_dynamic_100_plus_meters", dynamicHideTurnDistances.from100Kmh)
         putBoolean("guide_shown", OverlayPrefs.guideShown(context))
+        putBoolean("overlay_time_24h_format", OverlayPrefs.isTime24hFormat(context))
 
         putFloat("overlay_battery_x_dp", batteryPos.x)
         putFloat("overlay_battery_y_dp", batteryPos.y)

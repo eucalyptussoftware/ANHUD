@@ -180,6 +180,7 @@ object OverlayPrefs {
     private const val KEY_HIDE_TURN_DYNAMIC_100_PLUS_METERS = "hide_turn_dynamic_100_plus_meters"
     private const val KEY_HIDE_TURN_DYNAMIC_HIDE_MAP_BLOCK = "hide_turn_dynamic_hide_map_block"
     private const val KEY_GUIDE_SHOWN = "guide_shown"
+    private const val KEY_TIME_24H_FORMAT = "overlay_time_24h_format"
     private const val KEY_NAV_WIDTH_DP = "overlay_nav_width_dp"
     private const val KEY_BATTERY_X_DP = "overlay_battery_x_dp"
     private const val KEY_BATTERY_Y_DP = "overlay_battery_y_dp"
@@ -239,6 +240,14 @@ object OverlayPrefs {
 
     fun setEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_ENABLED, enabled).apply()
+    }
+
+    fun isTime24hFormat(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_TIME_24H_FORMAT, true)
+    }
+
+    fun setTime24hFormat(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean(KEY_TIME_24H_FORMAT, value).apply()
     }
 
     fun displayId(context: Context): Int {

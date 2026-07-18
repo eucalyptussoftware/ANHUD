@@ -2978,15 +2978,26 @@ class HudOverlayController(private val context: Context) {
 
     private fun resolveArrivalText(state: NavigationHudState): String {
         val explicitArrival = state.arrival.trim()
+        val use24h = OverlayPrefs.isTime24hFormat(context)
+
         if (explicitArrival.isNotBlank()) {
-            return normalizeTo24Hour(explicitArrival) ?: explicitArrival
+            return if (use24h) {
+                normalizeTo24Hour(explicitArrival) ?: explicitArrival
+            } else {
+                WazeFormatter.formatWazeArrivalTime(explicitArrival)
+            }
         }
         val etaSeconds = parseEtaSeconds(state.time.trim()) ?: return ""
         if (etaSeconds <= 0) {
             return ""
         }
         val arrivalAtMillis = System.currentTimeMillis() + etaSeconds.toLong() * 1000L
-        return clockFormatter.format(Date(arrivalAtMillis))
+        return if (use24h) {
+            clockFormatter.format(Date(arrivalAtMillis))
+        } else {
+            val sdf = SimpleDateFormat("h:mma", Locale.US)
+            sdf.format(Date(arrivalAtMillis)).lowercase(Locale.US)
+        }
     }
 
     private fun normalizeTo24Hour(text: String): String? {
