@@ -18,6 +18,7 @@ object ScreenMirrorManager {
     private var resultCode: Int = 0
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
+    private var densityDpi: Int = 160
     
     fun setProjectionData(code: Int, intent: Intent) {
         resultCode = code
@@ -44,22 +45,30 @@ object ScreenMirrorManager {
                 }
             }, android.os.Handler(android.os.Looper.getMainLooper()))
             
+            densityDpi = metrics.densityDpi
             virtualDisplay = it.createVirtualDisplay(
                 "ANHUD_Mirror",
-                metrics.widthPixels,
-                metrics.heightPixels,
-                metrics.densityDpi,
+                width,
+                height,
+                densityDpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 surface,
                 null,
                 null
             )
-            Log.i("ScreenMirrorManager", "Started mirroring to surface ${width}x${height}")
+            Log.i("ScreenMirrorManager", "Started mirroring to surface ${width}x${height} with resolution ${width}x${height}")
         }
     }
 
     fun stopMirroring() {
         virtualDisplay?.release()
         virtualDisplay = null
+    }
+
+    fun resizeMirror(width: Int, height: Int) {
+        virtualDisplay?.let {
+            it.resize(width, height, densityDpi)
+            Log.i("ScreenMirrorManager", "Resized virtual display to ${width}x${height}")
+        }
     }
 }

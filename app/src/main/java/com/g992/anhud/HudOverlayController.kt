@@ -3866,6 +3866,8 @@ class HudOverlayController(private val context: Context) {
         } else {
             mapContent.visibility = View.VISIBLE
             placeholder.visibility = View.GONE
+            mapContent.clipChildren = true
+            mapContainer.clipChildren = true
             if (mirrorEnabled && ScreenMirrorManager.hasProjectionData()) {
                 releaseMapController()
                 
@@ -3877,14 +3879,14 @@ class HudOverlayController(private val context: Context) {
                 val offX = OverlayPrefs.mirrorOffsetX(displayContext)
                 val offY = OverlayPrefs.mirrorOffsetY(displayContext)
 
-                val baseWidth = containerWidthPx
-                val baseHeight = (containerWidthPx * (defaultMetrics.heightPixels.toFloat() / defaultMetrics.widthPixels)).toInt()
+                val baseWidth = widthPx
+                val baseHeight = (widthPx * (defaultMetrics.heightPixels.toFloat() / defaultMetrics.widthPixels)).toInt()
 
                 val targetWidth = (baseWidth * sc).toInt()
                 val targetHeight = (baseHeight * sc).toInt()
 
-                val centerXMargin = (containerWidthPx - targetWidth) / 2
-                val centerYMargin = (containerHeightPx - targetHeight) / 2
+                val centerXMargin = (widthPx - targetWidth) / 2
+                val centerYMargin = (heightPx - targetHeight) / 2
 
                 val finalLeftMargin = (centerXMargin + offX).toInt()
                 val finalTopMargin = (centerYMargin + offY).toInt()
@@ -3899,7 +3901,7 @@ class HudOverlayController(private val context: Context) {
                         holder.addCallback(object : android.view.SurfaceHolder.Callback {
                             override fun surfaceCreated(holder: android.view.SurfaceHolder) {
                                 val surface = holder.surface
-                                ScreenMirrorManager.startMirroring(displayContext, surface, defaultMetrics.widthPixels, defaultMetrics.heightPixels, defaultMetrics)
+                                ScreenMirrorManager.startMirroring(displayContext, surface, targetWidth, targetHeight, defaultMetrics)
                             }
                             override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, w: Int, h: Int) {}
                             override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
@@ -3917,6 +3919,7 @@ class HudOverlayController(private val context: Context) {
                         topMargin = finalTopMargin
                     }
                     mapContent.requestLayout()
+                    ScreenMirrorManager.resizeMirror(targetWidth, targetHeight)
                 }
             } else {
                 ensureLocalMapController(displayContext, mapContent).apply {
@@ -4033,6 +4036,17 @@ class HudOverlayController(private val context: Context) {
         return if (targetVisible) targetHeight else 0
     }
 
+    private fun applyMirrorMatrix(textureView: android.view.TextureView, width: Int, height: Int, context: Context) {
+        if (width <= 0 || height <= 0) return
+        val sc = OverlayPrefs.mirrorScale(context)
+        val offX = OverlayPrefs.mirrorOffsetX(context)
+        val offY = OverlayPrefs.mirrorOffsetY(context)
+        val matrix = android.graphics.Matrix()
+        matrix.postScale(sc, sc, width / 2f, height / 2f)
+        matrix.postTranslate(offX, offY)
+        textureView.setTransform(matrix)
+    }
+
     private fun ensureLocalMapController(displayContext: Context, mapContent: FrameLayout): HudMapController {
         val existing = hudMapController
         if (existing != null) {
@@ -4122,6 +4136,11 @@ class HudOverlayController(private val context: Context) {
         } else {
             null
         }
+        val exactHeightPx = if (params != null && params.height > 0 && (view == mapContainerView)) {
+            params.height.toFloat()
+        } else {
+            null
+        }
         val widthSpec = if ((exactWidthPx ?: maxWidthPx) > 0f) {
             val width = (exactWidthPx ?: maxWidthPx).roundToInt()
             val mode = if (exactWidth) View.MeasureSpec.EXACTLY else View.MeasureSpec.AT_MOST
@@ -4129,8 +4148,11 @@ class HudOverlayController(private val context: Context) {
         } else {
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         }
-        val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        view.measure(widthSpec, heightSpec)
+        val heightSpec = if (exactHeightPx != null && exactHeightPx > 0f) {
+            View.MeasureSpec.makeMeasureSpec(exactHeightPx.roundToInt(), View.MeasureSpec.EXACTLY)
+        } else {
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        }
         val measuredWidth = view.measuredWidth
         val measuredHeight = view.measuredHeight
         if (measuredWidth > 0 && measuredHeight > 0 &&
