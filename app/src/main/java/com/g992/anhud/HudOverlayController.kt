@@ -3860,10 +3860,42 @@ class HudOverlayController(private val context: Context) {
         } else {
             mapContent.visibility = View.VISIBLE
             placeholder.visibility = View.GONE
-            ensureLocalMapController(displayContext, mapContent).apply {
-                attachTo(mapContent)
-                setTripStatusReservedHeightPx(tripStatusReservedHeightPx)
-                setVisible(true)
+            if (ScreenMirrorManager.hasProjectionData()) {
+                releaseMapController()
+                if (mapContent.childCount == 0) {
+                    val textureView = android.view.TextureView(displayContext).apply {
+                        layoutParams = android.widget.FrameLayout.LayoutParams(
+                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                        )
+                        surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
+                            override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, width: Int, height: Int) {
+                                val surface = android.view.Surface(st)
+                                val metrics = displayContext.resources.displayMetrics
+                                ScreenMirrorManager.startMirroring(displayContext, surface, width, height, metrics)
+                                
+                                // Crop to center. Assuming Waze uses the whole screen.
+                                // Let's zoom 2x for a start, focused on the center.
+                                val matrix = android.graphics.Matrix()
+                                matrix.postScale(2.5f, 2.5f, width / 2f, height / 2f)
+                                setTransform(matrix)
+                            }
+                            override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, width: Int, height: Int) {}
+                            override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture): Boolean {
+                                ScreenMirrorManager.stopMirroring()
+                                return true
+                            }
+                            override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) {}
+                        }
+                    }
+                    mapContent.addView(textureView)
+                }
+            } else {
+                ensureLocalMapController(displayContext, mapContent).apply {
+                    attachTo(mapContent)
+                    setTripStatusReservedHeightPx(tripStatusReservedHeightPx)
+                    setVisible(true)
+                }
             }
         }
     }

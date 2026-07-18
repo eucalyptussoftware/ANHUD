@@ -206,6 +206,14 @@ class MainActivity : ScaledActivity() {
         turnSignalCustomIconPickerCallback = onResult
         turnSignalCustomIconPickerLauncher.launch(arrayOf("image/png", "image/svg+xml"))
     }
+    private val mediaProjectionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
+            ScreenMirrorManager.setProjectionData(result.resultCode, result.data!!)
+            OverlayPrefs.setMapEnabled(this, true)
+            notifyOverlaySettingsChanged(mapEnabled = true)
+            // Service is already running, no need to start it again. Just notify.
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -329,6 +337,15 @@ class MainActivity : ScaledActivity() {
         }
 
         overlaySwitch.isChecked = OverlayPrefs.isEnabled(this)
+        findViewById<Button>(R.id.requestMirrorPermissionButton).setOnClickListener {
+            android.util.Log.d("ScreenMirror", "Button clicked! Launching intent...")
+            val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as android.media.projection.MediaProjectionManager
+            try {
+                mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+            } catch(e: Exception) {
+                android.util.Log.e("ScreenMirror", "Failed to launch", e)
+            }
+        }
         overlaySwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isSyncingUi) {
                 return@setOnCheckedChangeListener

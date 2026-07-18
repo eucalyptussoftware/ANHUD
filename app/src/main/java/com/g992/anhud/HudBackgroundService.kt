@@ -575,19 +575,19 @@ class HudBackgroundService : Service() {
                     startForeground(
                         NOTIFICATION_ID,
                         notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
                     )
                 } else if (hasLocation) {
                     startForeground(
                         NOTIFICATION_ID,
                         notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
                     )
                 } else {
                     startForeground(
                         NOTIFICATION_ID,
                         notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
                     )
                 }
             } catch (e: Exception) {
@@ -596,10 +596,14 @@ class HudBackgroundService : Service() {
                     startForeground(
                         NOTIFICATION_ID,
                         notification,
-                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
                     )
-                } catch (e2: Exception) {
-                    startForeground(NOTIFICATION_ID, notification)
+                } catch (e2: Throwable) {
+                    try {
+                        startForeground(NOTIFICATION_ID, notification)
+                    } catch (e3: Throwable) {
+                        android.util.Log.e("HudBackgroundService", "Absolutely failed to start foreground", e3)
+                    }
                 }
             }
         } else {
