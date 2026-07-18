@@ -460,6 +460,24 @@
                         android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/navShowDistanceInsideArrowCheck"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/nav_show_distance_inside_arrow_label"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/navShowDistanceInsideArrowDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/nav_show_distance_inside_arrow_desc"
+                android:textColor="#B0FFFFFF"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout

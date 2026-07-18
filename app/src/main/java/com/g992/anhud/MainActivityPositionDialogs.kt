@@ -58,6 +58,60 @@ internal fun MainActivity.openPositionDialog(
     val previewTurnSignalsLeft = dialogView.findViewById<ImageView>(R.id.dialogPreviewTurnSignalsLeft)
     val previewTurnSignalsRight = dialogView.findViewById<ImageView>(R.id.dialogPreviewTurnSignalsRight)
     val previewClock = dialogView.findViewById<TextView>(R.id.dialogPreviewClock)
+    val previewLanesBlock = dialogView.findViewById<LinearLayout>(R.id.dialogPreviewLanesBlock)
+    val previewBatteryContainer = dialogView.findViewById<View>(R.id.dialogPreviewBatteryContainer)
+    val previewRpmContainer = dialogView.findViewById<View>(R.id.dialogPreviewRpmContainer)
+    val previewFuelContainer = dialogView.findViewById<View>(R.id.dialogPreviewFuelContainer)
+    val previewPowerContainer = dialogView.findViewById<View>(R.id.dialogPreviewPowerContainer)
+    previewLanesBlock?.apply {
+        removeAllViews()
+        val density = resources.displayMetrics.density
+        val iconSize = (24f * density).roundToInt()
+        val spacing = (4f * density).roundToInt()
+        val mockDirections = listOf(
+            listOf(0) to true,
+            listOf(1) to false,
+            listOf(2) to false
+        )
+        for ((idx, pair) in mockDirections.withIndex()) {
+            val (dirs, highlighted) = pair
+            val imageView = ImageView(context)
+            val lp = LinearLayout.LayoutParams(iconSize, iconSize)
+            if (idx < mockDirections.lastIndex) {
+                lp.setMarginEnd(spacing)
+            }
+            imageView.layoutParams = lp
+            imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+            val drawableRes = if (dirs.contains(0) && dirs.contains(2)) {
+                R.drawable.context_lane_leftfromright_small_24
+            } else if (dirs.contains(0) && dirs.contains(5)) {
+                R.drawable.context_lane_rightfromleft_small_24
+            } else if (dirs.contains(2)) {
+                R.drawable.context_lane_left90_small_24
+            } else if (dirs.contains(1)) {
+                R.drawable.context_lane_left45_small_24
+            } else if (dirs.contains(3)) {
+                R.drawable.context_lane_left135_small_24
+            } else if (dirs.contains(5)) {
+                R.drawable.context_lane_right90_small_24
+            } else if (dirs.contains(4)) {
+                R.drawable.context_lane_right45_small_24
+            } else if (dirs.contains(6)) {
+                R.drawable.context_lane_right135_small_24
+            } else if (dirs.contains(7) || dirs.contains(8)) {
+                R.drawable.context_lane_left180_small_24
+            } else {
+                R.drawable.context_lane_straightahead_small_24
+            }
+            imageView.setImageResource(drawableRes)
+            if (highlighted) {
+                imageView.setColorFilter(ContextCompat.getColor(context, R.color.traffic_light_green_primary))
+            } else {
+                imageView.setColorFilter(Color.WHITE)
+            }
+            addView(imageView)
+        }
+    }
     val showOthersCheck = dialogView.findViewById<CheckBox>(R.id.dialogShowOthers)
     val hideWhenMapActiveCheck = dialogView.findViewById<CheckBox>(R.id.dialogHideWhenMapActive)
     val hudSpeedGpsStatusCheck = dialogView.findViewById<CheckBox>(R.id.dialogHudSpeedShowGpsStatus)
@@ -112,6 +166,11 @@ internal fun MainActivity.openPositionDialog(
     val mapPosition = OverlayPrefs.mapPositionDp(this)
     val mapSize = OverlayPrefs.mapSizeDp(this)
     val laneGuidancePosition = OverlayPrefs.laneGuidancePositionDp(this)
+    val lanesPosition = OverlayPrefs.lanesPositionDp(this)
+    val batteryPosition = OverlayPrefs.batteryPositionDp(this)
+    val rpmPosition = OverlayPrefs.rpmPositionDp(this)
+    val fuelPosition = OverlayPrefs.fuelPositionDp(this)
+    val powerPosition = OverlayPrefs.powerPositionDp(this)
     val mapPoint = PointF(mapPosition.x, mapPosition.y)
     val navPoint = PointF(navPosition.x, navPosition.y)
     val laneGuidancePoint = PointF(laneGuidancePosition.x, laneGuidancePosition.y)
@@ -125,6 +184,11 @@ internal fun MainActivity.openPositionDialog(
     val turnSignalsPoint = PointF(turnSignalsPosition.x, turnSignalsPosition.y)
     val clockPoint = PointF(clockPosition.x, clockPosition.y)
     val containerPoint = PointF(containerPosition.x, containerPosition.y)
+    val lanesPoint = PointF(lanesPosition.x, lanesPosition.y)
+    val batteryPoint = PointF(batteryPosition.x, batteryPosition.y)
+    val rpmPoint = PointF(rpmPosition.x, rpmPosition.y)
+    val fuelPoint = PointF(fuelPosition.x, fuelPosition.y)
+    val powerPoint = PointF(powerPosition.x, powerPosition.y)
     var containerWidthDp = containerSize.x
     var containerHeightDp = containerSize.y
     var mapWidthDp = mapSize.x
@@ -147,6 +211,10 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.SPEEDOMETER -> (OverlayPrefs.speedometerScale(this) * 100).toInt()
         OverlayTarget.TURN_SIGNALS -> (OverlayPrefs.turnSignalsScale(this) * 100).toInt()
         OverlayTarget.CLOCK -> (OverlayPrefs.clockScale(this) * 100).toInt()
+        OverlayTarget.BATTERY -> (OverlayPrefs.batteryScale(this) * 100).toInt()
+        OverlayTarget.RPM -> (OverlayPrefs.rpmScale(this) * 100).toInt()
+        OverlayTarget.FUEL -> (OverlayPrefs.fuelScale(this) * 100).toInt()
+        OverlayTarget.POWER -> (OverlayPrefs.powerScale(this) * 100).toInt()
         OverlayTarget.CONTAINER -> 100
         else -> 100
     }
@@ -163,6 +231,10 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.SPEEDOMETER -> (OverlayPrefs.speedometerAlpha(this) * 100).toInt()
         OverlayTarget.TURN_SIGNALS -> (OverlayPrefs.turnSignalsAlpha(this) * 100).toInt()
         OverlayTarget.CLOCK -> (OverlayPrefs.clockAlpha(this) * 100).toInt()
+        OverlayTarget.BATTERY -> (OverlayPrefs.batteryAlpha(this) * 100).toInt()
+        OverlayTarget.RPM -> (OverlayPrefs.rpmAlpha(this) * 100).toInt()
+        OverlayTarget.FUEL -> (OverlayPrefs.fuelAlpha(this) * 100).toInt()
+        OverlayTarget.POWER -> (OverlayPrefs.powerAlpha(this) * 100).toInt()
         OverlayTarget.CONTAINER -> (OverlayPrefs.containerAlpha(this) * 100).toInt()
         else -> 100
     }.coerceIn(0, 100)
@@ -312,6 +384,10 @@ internal fun MainActivity.openPositionDialog(
         OverlayTarget.SPEEDOMETER -> getString(R.string.position_speedometer_block_label)
         OverlayTarget.TURN_SIGNALS -> getString(R.string.position_turn_signals_block_label)
         OverlayTarget.CLOCK -> getString(R.string.position_clock_block_label)
+        OverlayTarget.BATTERY -> getString(R.string.battery_soc_block_label)
+        OverlayTarget.RPM -> getString(R.string.engine_rpm_block_label)
+        OverlayTarget.FUEL -> getString(R.string.fuel_level_block_label)
+        OverlayTarget.POWER -> getString(R.string.engine_power_block_label)
         OverlayTarget.CONTAINER -> getString(R.string.position_container_label)
         else -> ""
     }
@@ -581,6 +657,10 @@ internal fun MainActivity.openPositionDialog(
         val showTurnSignals = target == OverlayTarget.TURN_SIGNALS ||
             (showOthers && OverlayPrefs.turnSignalsEnabled(activity))
         val showClock = target == OverlayTarget.CLOCK || (showOthers && OverlayPrefs.clockEnabled(activity))
+        val showBattery = target == OverlayTarget.BATTERY || (showOthers && OverlayPrefs.batteryEnabled(activity))
+        val showRpm = target == OverlayTarget.RPM || (showOthers && OverlayPrefs.rpmEnabled(activity))
+        val showFuel = target == OverlayTarget.FUEL || (showOthers && OverlayPrefs.fuelEnabled(activity))
+        val showPower = target == OverlayTarget.POWER || (showOthers && OverlayPrefs.powerEnabled(activity))
         previewMapBlock.visibility = if (showMap) View.VISIBLE else View.GONE
         previewNavBlock.visibility = if (showNav) View.VISIBLE else View.GONE
         previewLaneGuidanceBlock.visibility = if (showLaneGuidance) View.VISIBLE else View.GONE
@@ -596,6 +676,10 @@ internal fun MainActivity.openPositionDialog(
         previewSpeedometer.visibility = if (showSpeedometer) View.VISIBLE else View.GONE
         previewTurnSignals.visibility = if (showTurnSignals) View.VISIBLE else View.GONE
         previewClock.visibility = if (showClock) View.VISIBLE else View.GONE
+        previewBatteryContainer?.visibility = if (showBattery) View.VISIBLE else View.GONE
+        previewRpmContainer?.visibility = if (showRpm) View.VISIBLE else View.GONE
+        previewFuelContainer?.visibility = if (showFuel) View.VISIBLE else View.GONE
+        previewPowerContainer?.visibility = if (showPower) View.VISIBLE else View.GONE
         if (target == OverlayTarget.CONTAINER) {
             previewHudContainer.background = ContextCompat.getDrawable(activity, R.drawable.bg_hud_container_outline)
             updatePreviewContainerSize(previewContainer, previewHudContainer, containerWidthDp, containerHeightDp)
@@ -876,6 +960,67 @@ internal fun MainActivity.openPositionDialog(
                 OverlayPrefs.clockAlpha(activity).coerceIn(0f, 1f)
             }
         }
+        if (showBattery && previewBatteryContainer != null) {
+            positionPreviewView(
+                previewHudContainer,
+                previewBatteryContainer,
+                batteryPoint.x,
+                batteryPoint.y,
+                containerWidthPx,
+                containerHeightPx
+            )
+            previewBatteryContainer.alpha = if (target == OverlayTarget.BATTERY) {
+                brightnessSeek.progress.coerceIn(0, 100) / 100f
+            } else {
+                OverlayPrefs.batteryAlpha(activity).coerceIn(0f, 1f)
+            }
+        }
+        if (showRpm && previewRpmContainer != null) {
+            positionPreviewView(
+                previewHudContainer,
+                previewRpmContainer,
+                rpmPoint.x,
+                rpmPoint.y,
+                containerWidthPx,
+                containerHeightPx
+            )
+            previewRpmContainer.alpha = if (target == OverlayTarget.RPM) {
+                brightnessSeek.progress.coerceIn(0, 100) / 100f
+            } else {
+                OverlayPrefs.rpmAlpha(activity).coerceIn(0f, 1f)
+            }
+        }
+        if (showFuel && previewFuelContainer != null) {
+            positionPreviewView(
+                previewHudContainer,
+                previewFuelContainer,
+                fuelPoint.x,
+                fuelPoint.y,
+                containerWidthPx,
+                containerHeightPx
+            )
+            previewFuelContainer.alpha = if (target == OverlayTarget.FUEL) {
+                brightnessSeek.progress.coerceIn(0, 100) / 100f
+            } else {
+                OverlayPrefs.fuelAlpha(activity).coerceIn(0f, 1f)
+            }
+        }
+        if (showPower && previewPowerContainer != null) {
+            positionPreviewView(
+                previewHudContainer,
+                previewPowerContainer,
+                powerPoint.x,
+                powerPoint.y,
+                containerWidthPx,
+                containerHeightPx
+            )
+            previewPowerContainer.alpha = if (target == OverlayTarget.POWER) {
+                brightnessSeek.progress.coerceIn(0, 100) / 100f
+            } else {
+                OverlayPrefs.powerAlpha(activity).coerceIn(0f, 1f)
+            }
+        }
+
     }
 
     fun updateOverlayPosition(previewX: Float, previewY: Float, persist: Boolean) {
@@ -893,6 +1038,11 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.TURN_SIGNALS -> previewTurnSignals
             OverlayTarget.CLOCK -> previewClock
             OverlayTarget.CONTAINER -> previewHudContainer
+            OverlayTarget.LANES -> previewLanesBlock
+            OverlayTarget.BATTERY -> previewBatteryContainer
+            OverlayTarget.RPM -> previewRpmContainer
+            OverlayTarget.FUEL -> previewFuelContainer
+            OverlayTarget.POWER -> previewPowerContainer
             else -> previewHudContainer
         }
         val boundsWidth = if (target == OverlayTarget.CONTAINER) {
@@ -1078,6 +1228,59 @@ internal fun MainActivity.openPositionDialog(
                     previewShowOthers = showOthersCheck.isChecked
                 )
             }
+            OverlayTarget.BATTERY -> {
+                if (persist) {
+                    OverlayPrefs.setBatteryPositionDp(this, dpX, dpY)
+                    batteryPoint.x = dpX
+                    batteryPoint.y = dpY
+                }
+                notifyOverlaySettingsChanged(
+                    batteryPosition = point,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+            }
+            OverlayTarget.RPM -> {
+                if (persist) {
+                    OverlayPrefs.setRpmPositionDp(this, dpX, dpY)
+                    rpmPoint.x = dpX
+                    rpmPoint.y = dpY
+                }
+                notifyOverlaySettingsChanged(
+                    rpmPosition = point,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+            }
+            OverlayTarget.FUEL -> {
+                if (persist) {
+                    OverlayPrefs.setFuelPositionDp(this, dpX, dpY)
+                    fuelPoint.x = dpX
+                    fuelPoint.y = dpY
+                }
+                notifyOverlaySettingsChanged(
+                    fuelPosition = point,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+            }
+            OverlayTarget.POWER -> {
+                if (persist) {
+                    OverlayPrefs.setPowerPositionDp(this, dpX, dpY)
+                    powerPoint.x = dpX
+                    powerPoint.y = dpY
+                }
+                notifyOverlaySettingsChanged(
+                    powerPosition = point,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+            }
+
             OverlayTarget.CONTAINER -> {
                 if (persist) {
                     OverlayPrefs.setContainerPositionDp(this, dpX, dpY)
@@ -1213,6 +1416,11 @@ internal fun MainActivity.openPositionDialog(
             OverlayTarget.TURN_SIGNALS -> previewTurnSignals
             OverlayTarget.CLOCK -> previewClock
             OverlayTarget.CONTAINER -> previewHudContainer
+            OverlayTarget.LANES -> previewLanesBlock
+            OverlayTarget.BATTERY -> previewBatteryContainer
+            OverlayTarget.RPM -> previewRpmContainer
+            OverlayTarget.FUEL -> previewFuelContainer
+            OverlayTarget.POWER -> previewPowerContainer
             else -> previewHudContainer
         },
         lockX = false
@@ -1433,6 +1641,30 @@ internal fun MainActivity.openPositionDialog(
                     previewTarget = target,
                     previewShowOthers = showOthersCheck.isChecked
                 )
+                OverlayTarget.BATTERY -> notifyOverlaySettingsChanged(
+                    batteryScale = scale,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+                OverlayTarget.RPM -> notifyOverlaySettingsChanged(
+                    rpmScale = scale,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+                OverlayTarget.FUEL -> notifyOverlaySettingsChanged(
+                    fuelScale = scale,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
+                OverlayTarget.POWER -> notifyOverlaySettingsChanged(
+                    powerScale = scale,
+                    preview = true,
+                    previewTarget = target,
+                    previewShowOthers = showOthersCheck.isChecked
+                )
                 OverlayTarget.CONTAINER -> Unit
                 else -> Unit
             }
@@ -1550,6 +1782,42 @@ internal fun MainActivity.openPositionDialog(
                     OverlayPrefs.setClockScale(activity, scale)
                     notifyOverlaySettingsChanged(
                         clockScale = scale,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.BATTERY -> {
+                    OverlayPrefs.setBatteryScale(activity, scale)
+                    notifyOverlaySettingsChanged(
+                        batteryScale = scale,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.RPM -> {
+                    OverlayPrefs.setRpmScale(activity, scale)
+                    notifyOverlaySettingsChanged(
+                        rpmScale = scale,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.FUEL -> {
+                    OverlayPrefs.setFuelScale(activity, scale)
+                    notifyOverlaySettingsChanged(
+                        fuelScale = scale,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.POWER -> {
+                    OverlayPrefs.setPowerScale(activity, scale)
+                    notifyOverlaySettingsChanged(
+                        powerScale = scale,
                         preview = true,
                         previewTarget = target,
                         previewShowOthers = showOthersCheck.isChecked
@@ -1677,6 +1945,42 @@ internal fun MainActivity.openPositionDialog(
                         previewShowOthers = showOthersCheck.isChecked
                     )
                 }
+                OverlayTarget.BATTERY -> {
+                    previewBatteryContainer?.alpha = alpha
+                    notifyOverlaySettingsChanged(
+                        batteryAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.RPM -> {
+                    previewRpmContainer?.alpha = alpha
+                    notifyOverlaySettingsChanged(
+                        rpmAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.FUEL -> {
+                    previewFuelContainer?.alpha = alpha
+                    notifyOverlaySettingsChanged(
+                        fuelAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.POWER -> {
+                    previewPowerContainer?.alpha = alpha
+                    notifyOverlaySettingsChanged(
+                        powerAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
                 OverlayTarget.CONTAINER -> {
                     updatePreviewContainerAlpha(previewHudContainer, alpha)
                     notifyOverlaySettingsChanged(
@@ -1799,6 +2103,42 @@ internal fun MainActivity.openPositionDialog(
                     OverlayPrefs.setClockAlpha(activity, alpha)
                     notifyOverlaySettingsChanged(
                         clockAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.BATTERY -> {
+                    OverlayPrefs.setBatteryAlpha(activity, alpha)
+                    notifyOverlaySettingsChanged(
+                        batteryAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.RPM -> {
+                    OverlayPrefs.setRpmAlpha(activity, alpha)
+                    notifyOverlaySettingsChanged(
+                        rpmAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.FUEL -> {
+                    OverlayPrefs.setFuelAlpha(activity, alpha)
+                    notifyOverlaySettingsChanged(
+                        fuelAlpha = alpha,
+                        preview = true,
+                        previewTarget = target,
+                        previewShowOthers = showOthersCheck.isChecked
+                    )
+                }
+                OverlayTarget.POWER -> {
+                    OverlayPrefs.setPowerAlpha(activity, alpha)
+                    notifyOverlaySettingsChanged(
+                        powerAlpha = alpha,
                         preview = true,
                         previewTarget = target,
                         previewShowOthers = showOthersCheck.isChecked
@@ -2221,11 +2561,19 @@ private fun MainActivity.maxPreviewY(container: FrameLayout, view: View): Float 
 }
 
 private fun previewViewWidth(view: View): Float {
-    return (view.width * view.scaleX.coerceAtLeast(0f)).coerceAtLeast(0f)
+    val w = if (view.width > 0) view.width else {
+        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        view.measuredWidth
+    }
+    return (w * view.scaleX.coerceAtLeast(0f)).coerceAtLeast(0f)
 }
 
 private fun previewViewHeight(view: View): Float {
-    return (view.height * view.scaleY.coerceAtLeast(0f)).coerceAtLeast(0f)
+    val h = if (view.height > 0) view.height else {
+        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        view.measuredHeight
+    }
+    return (h * view.scaleY.coerceAtLeast(0f)).coerceAtLeast(0f)
 }
 
 private fun resolveScaledLayoutWidthPx(visibleWidthPx: Float, scale: Float): Int {

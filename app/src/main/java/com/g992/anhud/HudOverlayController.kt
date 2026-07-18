@@ -35,7 +35,6 @@ import kotlin.math.roundToInt
 
 class HudOverlayController(private val context: Context) {
     companion object {
-        private const val SHOW_DISTANCE_INSIDE_ARROW = false
         private const val CONTAINER_OUTLINE_PREVIEW_MIN_ALPHA = 0.35f
         private const val CLOCK_TICK_MS = 5_000L
         private const val MAP_HIDE_BY_MANEUVER_DELAY_MS = 5_000L
@@ -2804,7 +2803,7 @@ class HudOverlayController(private val context: Context) {
                 val drawableRes = WazeManeuverMapper.drawableForManeuver(wazeId)
                 image.setImageResource(drawableRes)
                 image.visibility = View.VISIBLE
-                if (SHOW_DISTANCE_INSIDE_ARROW) {
+                if (OverlayPrefs.showDistanceInsideArrow(container.context)) {
                     label.text = nextText
                     label.visibility = if (nextText.isNotBlank()) View.VISIBLE else View.GONE
                 } else {

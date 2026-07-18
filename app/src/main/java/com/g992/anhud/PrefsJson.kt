@@ -315,6 +315,7 @@ object PrefsJson {
         putFloat("overlay_container_alpha", OverlayPrefs.containerAlpha(context))
         putFloat("overlay_map_alpha", OverlayPrefs.mapAlpha(context))
         putBoolean("overlay_nav_enabled", OverlayPrefs.navEnabled(context))
+        putBoolean("overlay_show_distance_inside_arrow", OverlayPrefs.showDistanceInsideArrow(context))
         putBoolean("overlay_nav_hide_when_map_active", OverlayPrefs.navHideWhenMapActive(context))
         putBoolean("overlay_lane_guidance_enabled", OverlayPrefs.laneGuidanceEnabled(context))
         putBoolean("overlay_lane_guidance_hide_when_map_active", OverlayPrefs.laneGuidanceHideWhenMapActive(context))

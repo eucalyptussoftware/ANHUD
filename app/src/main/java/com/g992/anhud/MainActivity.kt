@@ -161,6 +161,7 @@ class MainActivity : ScaledActivity() {
     internal lateinit var speedometerShowUnitTextCheck: CheckBox
     internal lateinit var speedLimitFromHudSpeedCheck: CheckBox
     internal lateinit var arrowOnlyWhenNoIconCheck: CheckBox
+    internal lateinit var navShowDistanceInsideArrowCheck: CheckBox
     private lateinit var arrowOnlyWhenNoIconDesc: TextView
     internal lateinit var speedometerCardPreviewText: TextView
     internal lateinit var speedLimitAlertCheck: CheckBox
@@ -277,6 +278,7 @@ class MainActivity : ScaledActivity() {
         speedometerShowUnitTextCheck = findViewById(R.id.speedometerShowUnitTextCheck)
         speedLimitFromHudSpeedCheck = findViewById(R.id.speedLimitFromHudSpeedCheck)
         arrowOnlyWhenNoIconCheck = findViewById(R.id.arrowOnlyWhenNoIconCheck)
+        navShowDistanceInsideArrowCheck = findViewById(R.id.navShowDistanceInsideArrowCheck)
         arrowOnlyWhenNoIconDesc = findViewById(R.id.arrowOnlyWhenNoIconDesc)
         speedometerCardPreviewText = findViewById(R.id.speedometerCardPreviewText)
         speedLimitAlertCheck = findViewById(R.id.speedLimitAlertCheck)
@@ -565,6 +567,13 @@ class MainActivity : ScaledActivity() {
             }
             OverlayPrefs.setArrowOnlyWhenNoIcon(this, isChecked)
             notifyOverlaySettingsChanged(arrowOnlyWhenNoIcon = isChecked)
+        }
+        navShowDistanceInsideArrowCheck.setOnCheckedChangeListener { _, isChecked ->
+            if (isSyncingUi) {
+                return@setOnCheckedChangeListener
+            }
+            OverlayPrefs.setShowDistanceInsideArrow(this, isChecked)
+            notifyOverlaySettingsChanged()
         }
 
         val speedLimitAlertEnabled = OverlayPrefs.speedLimitAlertEnabled(this)

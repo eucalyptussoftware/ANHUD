@@ -101,6 +101,7 @@ internal fun MainActivity.syncUiFromPrefs() {
         updateTurnSignalsIconPreview()
         speedLimitFromHudSpeedCheck.isChecked = OverlayPrefs.speedLimitFromHudSpeed(this)
         arrowOnlyWhenNoIconCheck.isChecked = OverlayPrefs.arrowOnlyWhenNoIcon(this)
+        navShowDistanceInsideArrowCheck.isChecked = OverlayPrefs.showDistanceInsideArrow(this)
 
         val speedLimitAlertEnabled = OverlayPrefs.speedLimitAlertEnabled(this)
         val speedLimitAlertThreshold = OverlayPrefs.speedLimitAlertThreshold(this)

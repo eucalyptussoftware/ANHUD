@@ -127,6 +127,7 @@ object OverlayPrefs {
     private const val KEY_CONTAINER_ALPHA = "overlay_container_alpha"
     private const val KEY_MAP_ALPHA = "overlay_map_alpha"
     private const val KEY_NAV_ENABLED = "overlay_nav_enabled"
+    const val KEY_SHOW_DISTANCE_INSIDE_ARROW = "overlay_show_distance_inside_arrow"
     private const val KEY_NAV_HIDE_WHEN_MAP_ACTIVE = "overlay_nav_hide_when_map_active"
     private const val KEY_LANE_GUIDANCE_ENABLED = "overlay_lane_guidance_enabled"
     private const val KEY_LANE_GUIDANCE_HIDE_WHEN_MAP_ACTIVE = "overlay_lane_guidance_hide_when_map_active"
@@ -970,6 +971,16 @@ object OverlayPrefs {
             .putBoolean(KEY_NAV_ENABLED, enabled)
             .apply()
     }
+    fun showDistanceInsideArrow(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_SHOW_DISTANCE_INSIDE_ARROW, false)
+    }
+
+    fun setShowDistanceInsideArrow(context: Context, enabled: Boolean) {
+        prefs(context).edit()
+            .putBoolean(KEY_SHOW_DISTANCE_INSIDE_ARROW, enabled)
+            .apply()
+    }
+
 
     fun navHideWhenMapActive(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_NAV_HIDE_WHEN_MAP_ACTIVE, false)

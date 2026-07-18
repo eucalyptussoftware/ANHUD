@@ -140,6 +140,8 @@
     <string name="speed_limit_alert_threshold_label">Порог индикации превышения</string>
     <string name="speed_limit_alert_threshold_value">+%1$d км/ч</string>
     <string name="speed_limit_alert_threshold_default">+0 км/ч</string>
+    <string name="nav_show_distance_inside_arrow_label">Показывать расстояние внутри стрелки</string>
+    <string name="nav_show_distance_inside_arrow_desc">При включении расстояние до следующего маневра отображается внутри значка стрелки (актуально для Waze).</string>
     <string name="arrow_only_when_no_icon_label">Отображать только при отсутствии иконки</string>
     <string name="arrow_only_when_no_icon_desc">При включении блок работает только при штатной навигации и когда приходит стрелка, которой нет в штатном навигаторе.</string>
     <string name="scale_percent_default">100%</string>
